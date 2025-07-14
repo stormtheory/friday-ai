@@ -9,23 +9,24 @@ from modules.thread_manager import get_active_thread, get_thread_history, save_t
 import subprocess
 from modules import memory
 from modules.context import get_context  # NEW: track conversation
+from config import LLAMA3_PRE_PROMPT,ASSISTANT_PROMPT_NAME
 
 def query_llama3(user_input: str) -> str:
     try:
         thread = get_active_thread()
 
         # Static header
-        prompt = "You are Friday, a helpful, concise, AI assistant.\n\n"
+        prompt = f"{LLAMA3_PRE_PROMPT}\n\n"
 
         # User input
-        prompt += f"My current quetion or statement\nUser: {user_input}\nFriday:\n\n"
+        prompt += f"My current quetion or statement\nUser: {user_input}\n{ASSISTANT_PROMPT_NAME}:\n\n"
 
         # Chat context
         context = get_context(thread)
         if context:
             prompt += "Context:\n"
             for turn in context:
-                prompt += f"User: {turn['user']}\nFriday: {turn['assistant']}\n"
+                prompt += f"User: {turn['user']}\n{ASSISTANT_PROMPT_NAME}: {turn['assistant']}\n"
 
         context_summary = get_long_term_summaries(thread)
         if context_summary:
@@ -74,7 +75,7 @@ def query_llama3(user_input: str) -> str:
 def summarize_context(chunks) -> str:
     summary_prompt = "You are an AI assistant summarizing a conversation.\n\n"
     for turn in chunks:
-        summary_prompt += f"User: {turn['user']}\nFriday: {turn['assistant']}\n"
+        summary_prompt += f"User: {turn['user']}\n{ASSISTANT_PROMPT_NAME}: {turn['assistant']}\n"
     summary_prompt += "\nSummarize this exchange in 1–3 sentences, keeping important facts or tasks."
 
     try:

@@ -1,7 +1,6 @@
 # Written by StormTheory
 # https://github.com/stormtheory/friday-ai
 
-
 #from transformers import CLIPImageProcessor
 import os
 import subprocess
@@ -9,6 +8,7 @@ import torch
 from datetime import datetime
 from diffusers import StableDiffusionPipeline
 import getpass
+from config import IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION
 
 username = getpass.getuser()
 
@@ -19,7 +19,7 @@ pipe = StableDiffusionPipeline.from_pretrained(
     torch_dtype=torch.float16,
 ).to("cuda")
 
-def generate_image(prompt: str, output_dir=f"/home/{username}/Pictures/AI"):
+def generate_image(prompt: str, output_dir=f"/home/{username}/{IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION}"):
     # Create images/ directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 

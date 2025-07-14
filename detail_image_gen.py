@@ -2,28 +2,20 @@
 # https://github.com/stormtheory/friday-ai
 
 import gradio as gr
-from diffusers import StableDiffusionPipeline
 from diffusers import StableDiffusionXLPipeline
 import torch
 import os
 from datetime import datetime
 import getpass
 import torch
+from config import DIG_WEBUI_TITLE,DIG_WEBUI_TOP_PAGE_BANNER,DIG_WEBUI_FILENAME,DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION, DIG_PICTURE_NUM_INFERENCE_STEPS,DIG_PICTURE_HEIGHT, DIG_PICTURE_WIDTH,DIG_PICTURE_NEG_PROMPT,DIG_PICTURE_GUIDANCE_SCALE
 
 torch.cuda.empty_cache()
 
 # Setup save directory
 username = getpass.getuser()
-save_dir = f"/home/{username}/Pictures/AI"
+save_dir = f"/home/{username}/{DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION}"
 os.makedirs(save_dir, exist_ok=True)
-
-# Load SDXL model (1 time only)
-#pipe = StableDiffusionXLPipeline.from_pretrained(
-#    "stabilityai/stable-diffusion-xl-base-1.0",
-#    torch_dtype=torch.float16,
-#    variant="fp16",
-#    use_safetensors=True
-#).to("cuda")
 
 # Load the model
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
@@ -49,31 +41,28 @@ def generate_image(prompt):
     if not prompt or prompt.strip() == "":
         return None, "beautiful tigers."
 
-    negative_prompt = "blurry, low quality, distorted, artifacts, text, watermark"
+    negative_prompt = f"{DIG_PICTURE_NEG_PROMPT}"
 
     # Generate image with memory-friendly settings
     image = pipe(
         prompt=prompt,
         negative_prompt=negative_prompt,
-        guidance_scale=7.5,
-        #num_inference_steps=20,
-        num_inference_steps=25,
-        #height=512,
-        #width=768
-        height=1024,
-        width=1024
+        guidance_scale=DIG_PICTURE_GUIDANCE_SCALE,
+        num_inference_steps=DIG_PICTURE_NUM_INFERENCE_STEPS,
+        height=DIG_PICTURE_HEIGHT,
+        width=DIG_PICTURE_WIDTH
     ).images[0]
 
     # Save image with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(save_dir, f"detailed_XL_friday_{timestamp}.png")
+    filename = os.path.join(save_dir, f"{DIG_WEBUI_FILENAME}_{timestamp}.png")
     image.save(filename)
 
     return image, f"✅ Image saved as {filename}"
 
 # Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("# 🎨 Stable Diffusion Image Generator - F.R.I.D.A.Y.")
+    gr.Markdown(f"# {DIG_WEBUI_TOP_PAGE_BANNER}")
 
     prompt_input = gr.Textbox(label="Enter prompt for image generation", lines=1, placeholder="e.g. a samurai standing on Mars with a red sun")
 
