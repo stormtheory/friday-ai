@@ -61,10 +61,30 @@ def get_active_thread():
         threads = list_threads()
         if threads:
             switch_thread(threads[0])
+            return threads[0]
         else:
-            return None
+            # No threads exist, create a default thread and switch to it
+            default_thread = "default"
+            create_thread(default_thread)
+            switch_thread(default_thread)
+            return default_thread
+
     with open(ACTIVE_FILE) as f:
-        return json.load(f).get("active")
+        data = json.load(f)
+        active = data.get("active")
+
+    if not active or active is None:
+        threads = list_threads()
+        if threads:
+            switch_thread(threads[0])
+            return threads[0]
+        else:
+            default_thread = "default"
+            create_thread(default_thread)
+            switch_thread(default_thread)
+            return default_thread
+
+    return active
     
 def get_thread_history(thread):
     path = os.path.join(THREADS_DIR, f"{thread}.json")
