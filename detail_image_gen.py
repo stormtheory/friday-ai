@@ -82,56 +82,60 @@ with gr.Blocks() as image_gen:
         lines=1,
         placeholder=f"e.g. {DEFAULT_PROMPT}"
     )
-
-    neg_prompt_input = gr.Textbox(
-        label="Negative Prompt (optional)",
-        lines=1,
-        placeholder=f"Default: {DIG_PICTURE_NEG_PROMPT}"
-    )
-
-    with gr.Row(scale=0.5):
-        guidance_input = gr.Number(
-                label="Guidance Scale [1 - 20]",
-                minimum=1.0,
-                maximum=20.0,
-                value=None,
-                placeholder=f"{DIG_PICTURE_GUIDANCE_SCALE}"
-            )
-        
-        steps_input = gr.Number(
-                label="Inference Steps [20 - 100]",
-                minimum=20,
-                maximum=100,
-                value=None,
-                placeholder=f"{DIG_PICTURE_NUM_INFERENCE_STEPS}"
-            )
-        
-        width_input = gr.Number(
-                label="Width",
-                minimum=64,
-                maximum=2048,
-                value=None,
-                placeholder=f"{DIG_PICTURE_WIDTH}"
-            )
-        
-        height_input = gr.Number(
-                label="Height",
-                minimum=64,
-                maximum=2048,
-                value=None,
-                placeholder=f"{DIG_PICTURE_HEIGHT}"
-            )
-
-    
-    with gr.Row(scale=0.5):
-        save_location_input = gr.Textbox(
-            label="Image Save Subfolder within User Home",
-            placeholder=f"{DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION}"
+# 🔽 Advanced Settings (collapsed by default)
+    with gr.Accordion("Advanced Settings", open=False):
+        neg_prompt_input = gr.Textbox(
+            label="Negative Prompt (optional)",
+            lines=1,
+            value=DIG_PICTURE_NEG_PROMPT,
+            placeholder=f"Default: {DIG_PICTURE_NEG_PROMPT}"
         )
-        filename_prefix_input = gr.Textbox(
-                label="Filename Prefix",
-                placeholder=f"{DIG_WEBUI_FILENAME}"
+
+        with gr.Row(scale=0.5):
+            guidance_input = gr.Number(
+                    label="Guidance Scale [1 - 20]",
+                    minimum=1.0,
+                    maximum=20.0,
+                    value=None,
+                    placeholder=f"{DIG_PICTURE_GUIDANCE_SCALE}"
+                )
+            
+            steps_input = gr.Number(
+                    label="Inference Steps [20 - 100]",
+                    minimum=20,
+                    maximum=100,
+                    value=None,
+                    placeholder=f"{DIG_PICTURE_NUM_INFERENCE_STEPS}"
+                )
+            
+            width_input = gr.Number(
+                    label="Width",
+                    minimum=64,
+                    maximum=2048,
+                    value=None,
+                    placeholder=f"{DIG_PICTURE_WIDTH}"
+                )
+            
+            height_input = gr.Number(
+                    label="Height",
+                    minimum=64,
+                    maximum=2048,
+                    value=None,
+                    placeholder=f"{DIG_PICTURE_HEIGHT}"
+                )
+
+        
+        with gr.Row(scale=0.5):
+            save_location_input = gr.Textbox(
+                label="Image Save Subfolder within User Home",
+                value=DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION,
+                placeholder=f"{DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION}"
             )
+            filename_prefix_input = gr.Textbox(
+                    label="Filename Prefix",
+                    value=DIG_WEBUI_FILENAME,
+                    placeholder=f"{DIG_WEBUI_FILENAME}"
+                )
 
     generate_btn = gr.Button("Generate Image")
 
