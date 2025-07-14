@@ -51,6 +51,10 @@ If there is interest in other Linux flavors/families please let me know or it's 
 All images generated are saved to your Pictures directory in your homespace un a folder called AI:
         
 	cd ~/Pictures/AI/ ; ls
+ 
+ By default the webUI after ran can be found by running this command:
+ 	
+  	firefox http://127.0.0.1:7860
 
 # Image Screenshots:
 ## Detailed Image Generator Local webUI
