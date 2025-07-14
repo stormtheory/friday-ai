@@ -1,0 +1,91 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+
+# Written by StormTheory
+# https://github.com/stormtheory/friday-ai
+
+### Creates or opens the virtual Enviorment needed for AI tools to run
+##### Note you will need at lead 4G of /tmp space available for the startup install
+
+if [ ! -d ./.venv ];then
+#### Build the Env Box
+	if apt list |grep -q python3.12-venv;then
+		echo "Installed..."
+	else
+		echo "Installing python3.12-venv"
+		sudo apt install python3.12-venv
+	fi
+	
+	if apt list |grep -q portaudio19-dev;then
+		echo "Installed..."
+	else
+	read -p "Install portaudio19-dev for audio? [y] > " ANS
+		if [ "$ANS" == y ];then
+			sudo apt install portaudio19-dev
+		fi
+	fi
+
+	if apt list| grep -q nvidia-driver;then
+		if apt list |grep -q nvidia-cuda-toolkit;then
+                	echo "Installed..."
+        	else
+        		read -p "Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
+                	if [ "$ANS" == y ];then
+                        	sudo apt install nvidia-cuda-toolkit
+                	fi
+		fi
+        fi	
+	
+	# 1. Create a virtual environment
+		python3 -m venv ./.venv
+
+	# 2. Activate it
+		source ./.venv/bin/activate
+
+	# 3. Update
+		pip install --upgrade pip
+
+#### Audio/Voice
+	pip install pyttsx3
+
+#### Voice
+	if apt list |grep -q portaudio19-dev;then
+		pip install SpeechRecognition pyaudio
+		pip install gTTS
+	fi
+	
+#### Image Generaters
+	# For CUDA 11.8 (check your version: nvidia-smi)
+	pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+	
+	# General Image Gen
+	pip install --upgrade pip setuptools wheel
+	pip install diffusers[torch] transformers[vision] accelerate safetensors
+	pip install torch transformers accelerate
+	pip install diffusers transformers accelerate safetensors
+	pip install xformers
+
+	## CPU RAM Offload / XL Image Gen
+	pip install bitsandbytes
+	pip install git+https://github.com/huggingface/huggingface_hub.git
+
+#### webui
+	pip install gradio  # WebGUI
+	pip install pymupdf # PDF
+
+#### Indexing / RAG
+	pip install sentence_transformers
+	pip install langchain
+	pip install sentence_transformers
+
+	pip install faiss-cpu
+	#pip install faiss-gpu
+fi
+
+	export PYTHONWARNINGS="ignore"
+#### Run the Box
+	source ./.venv/bin/activate
+#### Run the AI
+	echo "Starting the Detailed_Image_Gen WebUI"
+	python -m detail_image_gen
+	exit

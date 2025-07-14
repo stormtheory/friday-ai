@@ -1,0 +1,17 @@
+# Virtual environment
+.venv/
+
+# Private data files and directories
+data/active_thread.json
+data/context/
+data/chatbox_display_threads/
+data/memory.jason
+
+# Vector store directory
+vector_store/
+
+# Python Stuff
+__pycache__
+core/__pycache__
+utils/__pycache__
+modules/__pycache__
