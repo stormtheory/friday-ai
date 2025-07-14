@@ -79,9 +79,9 @@ if [ ! -d ./.venv ];then
 
 fi
 
-	export PYTHONWARNINGS="ignore"
 #### Run the Box
 	source ./.venv/bin/activate
+	export PYTHONWARNINGS="ignore"
 #### Run the AI
 	echo "Starting the AI"
 	python -m webui
