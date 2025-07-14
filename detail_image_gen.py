@@ -19,7 +19,7 @@ from config import (
     DIG_PICTURE_GUIDANCE_SCALE
 )
 
-# Define fallback prompt if user enters nothing
+# Define fallback prompt
 DEFAULT_PROMPT = "a samurai standing on Mars with a red sun"
 
 torch.cuda.empty_cache()
@@ -45,23 +45,27 @@ pipe.enable_model_cpu_offload()
 pipe.enable_vae_slicing()
 pipe.enable_attention_slicing()
 
-def generate_image(prompt, user_neg_prompt):
+def generate_image(prompt, user_neg_prompt, user_guidance_scale, user_steps, user_width, user_height):
     torch.cuda.empty_cache()
 
-    # Use default values if inputs are empty or only whitespace
     final_prompt = prompt.strip() if prompt and prompt.strip() else DEFAULT_PROMPT
     negative_prompt = user_neg_prompt.strip() if user_neg_prompt and user_neg_prompt.strip() else DIG_PICTURE_NEG_PROMPT
+
+    # Use config defaults if inputs are empty or invalid
+    guidance_scale = float(user_guidance_scale) if user_guidance_scale else DIG_PICTURE_GUIDANCE_SCALE
+    steps = int(user_steps) if user_steps else DIG_PICTURE_NUM_INFERENCE_STEPS
+    width = int(user_width) if user_width else DIG_PICTURE_WIDTH
+    height = int(user_height) if user_height else DIG_PICTURE_HEIGHT
 
     image = pipe(
         prompt=final_prompt,
         negative_prompt=negative_prompt,
-        guidance_scale=DIG_PICTURE_GUIDANCE_SCALE,
-        num_inference_steps=DIG_PICTURE_NUM_INFERENCE_STEPS,
-        height=DIG_PICTURE_HEIGHT,
-        width=DIG_PICTURE_WIDTH
+        guidance_scale=guidance_scale,
+        num_inference_steps=steps,
+        height=height,
+        width=width
     ).images[0]
 
-    # Save image with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(save_dir, f"{DIG_WEBUI_FILENAME}_{timestamp}.png")
     image.save(filename)
@@ -84,6 +88,40 @@ with gr.Blocks() as image_gen:
         placeholder=f"Default: {DIG_PICTURE_NEG_PROMPT}"
     )
 
+    with gr.Row(scale=0.1):
+        with gr.Column(scale=0.1):
+            guidance_input = gr.Number(
+                label="Guidance Scale  [1.0 to 20.0]",
+                minimum=1.0,
+                maximum=20.0,
+                value=None,
+                placeholder=f"{DIG_PICTURE_GUIDANCE_SCALE}"
+            )
+        with gr.Column(scale=0.1):
+            steps_input = gr.Number(
+                label="Inference Steps  [20 to 100]",
+                minimum=20,
+                maximum=100,
+                value=None,
+                placeholder=f"{DIG_PICTURE_NUM_INFERENCE_STEPS}"
+            )
+        with gr.Column(scale=0.1):
+            width_input = gr.Number(
+                label="Width",
+                minimum=64,
+                maximum=2048,
+                value=None,
+                placeholder=f"{DIG_PICTURE_WIDTH}"
+            )
+        with gr.Column(scale=0.1):
+            height_input = gr.Number(
+                label="Height",
+                minimum=64,
+                maximum=2048,
+                value=None,
+                placeholder=f"{DIG_PICTURE_HEIGHT}"
+            )
+
     generate_btn = gr.Button("Generate Image")
 
     output_image = gr.Image(label="Generated Image")
@@ -91,13 +129,27 @@ with gr.Blocks() as image_gen:
 
     generate_btn.click(
         fn=generate_image,
-        inputs=[prompt_input, neg_prompt_input],
+        inputs=[
+            prompt_input,
+            neg_prompt_input,
+            guidance_input,
+            steps_input,
+            width_input,
+            height_input
+        ],
         outputs=[output_image, output_text]
     )
 
     prompt_input.submit(
         fn=generate_image,
-        inputs=[prompt_input, neg_prompt_input],
+        inputs=[
+            prompt_input,
+            neg_prompt_input,
+            guidance_input,
+            steps_input,
+            width_input,
+            height_input
+        ],
         outputs=[output_image, output_text]
     )
 
