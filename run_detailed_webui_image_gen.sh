@@ -84,9 +84,10 @@ if [ ! -d ./.venv ];then
 	#pip install faiss-gpu
 fi
 
-	export PYTHONWARNINGS="ignore"
 #### Run the Box
 	source ./.venv/bin/activate
+	export PYTHONWARNINGS="ignore"
+	export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 #### Run the AI
 	echo "Starting the Detailed_Image_Gen WebUI"
 	python -m detail_image_gen
