@@ -5,7 +5,8 @@
 data/active_thread.json
 data/context/
 data/chatbox_display_threads/
-data/memory.jason
+data/chatbox_display_threads/default.json
+data/memory.json
 
 # Vector store directory
 vector_store/
