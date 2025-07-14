@@ -19,15 +19,10 @@ from config import (
     DIG_PICTURE_GUIDANCE_SCALE
 )
 
-# Define fallback prompt
+# Default prompt if none is provided
 DEFAULT_PROMPT = "a samurai standing on Mars with a red sun"
 
 torch.cuda.empty_cache()
-
-# Setup save directory
-username = getpass.getuser()
-save_dir = f"/home/{username}/{DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION}"
-os.makedirs(save_dir, exist_ok=True)
 
 # Load the model
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
@@ -45,17 +40,23 @@ pipe.enable_model_cpu_offload()
 pipe.enable_vae_slicing()
 pipe.enable_attention_slicing()
 
-def generate_image(prompt, user_neg_prompt, user_guidance_scale, user_steps, user_width, user_height):
+def generate_image(prompt, user_neg_prompt, user_guidance_scale, user_steps, user_width, user_height, user_filename_prefix, user_save_location):
     torch.cuda.empty_cache()
+
+    username = getpass.getuser()
 
     final_prompt = prompt.strip() if prompt and prompt.strip() else DEFAULT_PROMPT
     negative_prompt = user_neg_prompt.strip() if user_neg_prompt and user_neg_prompt.strip() else DIG_PICTURE_NEG_PROMPT
-
-    # Use config defaults if inputs are empty or invalid
     guidance_scale = float(user_guidance_scale) if user_guidance_scale else DIG_PICTURE_GUIDANCE_SCALE
     steps = int(user_steps) if user_steps else DIG_PICTURE_NUM_INFERENCE_STEPS
     width = int(user_width) if user_width else DIG_PICTURE_WIDTH
     height = int(user_height) if user_height else DIG_PICTURE_HEIGHT
+    filename_prefix = user_filename_prefix.strip() if user_filename_prefix and user_filename_prefix.strip() else DIG_WEBUI_FILENAME
+    save_subpath = user_save_location.strip() if user_save_location and user_save_location.strip() else DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
+
+    # Final save directory
+    save_dir = f"/home/{username}/{save_subpath}"
+    os.makedirs(save_dir, exist_ok=True)
 
     image = pipe(
         prompt=final_prompt,
@@ -67,7 +68,7 @@ def generate_image(prompt, user_neg_prompt, user_guidance_scale, user_steps, use
     ).images[0]
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(save_dir, f"{DIG_WEBUI_FILENAME}_{timestamp}.png")
+    filename = os.path.join(save_dir, f"{filename_prefix}_{timestamp}.png")
     image.save(filename)
 
     return image, f"✅ Image saved as {filename}"
@@ -88,33 +89,32 @@ with gr.Blocks() as image_gen:
         placeholder=f"Default: {DIG_PICTURE_NEG_PROMPT}"
     )
 
-    with gr.Row(scale=0.1):
-        with gr.Column(scale=0.1):
-            guidance_input = gr.Number(
-                label="Guidance Scale  [1.0 to 20.0]",
+    with gr.Row(scale=0.5):
+        guidance_input = gr.Number(
+                label="Guidance Scale [1 - 20]",
                 minimum=1.0,
                 maximum=20.0,
                 value=None,
                 placeholder=f"{DIG_PICTURE_GUIDANCE_SCALE}"
             )
-        with gr.Column(scale=0.1):
-            steps_input = gr.Number(
-                label="Inference Steps  [20 to 100]",
+        
+        steps_input = gr.Number(
+                label="Inference Steps [20 - 100]",
                 minimum=20,
                 maximum=100,
                 value=None,
                 placeholder=f"{DIG_PICTURE_NUM_INFERENCE_STEPS}"
             )
-        with gr.Column(scale=0.1):
-            width_input = gr.Number(
+        
+        width_input = gr.Number(
                 label="Width",
                 minimum=64,
                 maximum=2048,
                 value=None,
                 placeholder=f"{DIG_PICTURE_WIDTH}"
             )
-        with gr.Column(scale=0.1):
-            height_input = gr.Number(
+        
+        height_input = gr.Number(
                 label="Height",
                 minimum=64,
                 maximum=2048,
@@ -122,34 +122,42 @@ with gr.Blocks() as image_gen:
                 placeholder=f"{DIG_PICTURE_HEIGHT}"
             )
 
+    
+    with gr.Row(scale=0.5):
+        save_location_input = gr.Textbox(
+            label="Image Save Subfolder within User Home",
+            placeholder=f"{DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION}"
+        )
+        filename_prefix_input = gr.Textbox(
+                label="Filename Prefix",
+                placeholder=f"{DIG_WEBUI_FILENAME}"
+            )
+
     generate_btn = gr.Button("Generate Image")
 
     output_image = gr.Image(label="Generated Image")
     output_text = gr.Textbox(label="Status", interactive=False)
 
+    inputs_list = [
+        prompt_input,
+        neg_prompt_input,
+        guidance_input,
+        steps_input,
+        width_input,
+        height_input,
+        filename_prefix_input,
+        save_location_input
+    ]
+
     generate_btn.click(
         fn=generate_image,
-        inputs=[
-            prompt_input,
-            neg_prompt_input,
-            guidance_input,
-            steps_input,
-            width_input,
-            height_input
-        ],
+        inputs=inputs_list,
         outputs=[output_image, output_text]
     )
 
     prompt_input.submit(
         fn=generate_image,
-        inputs=[
-            prompt_input,
-            neg_prompt_input,
-            guidance_input,
-            steps_input,
-            width_input,
-            height_input
-        ],
+        inputs=inputs_list,
         outputs=[output_image, output_text]
     )
 
