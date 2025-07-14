@@ -1,3 +1,6 @@
+# Written by StormTheory
+# https://github.com/stormtheory/friday-ai
+
 # modules/rag.py
 import faiss, pickle, os
 import numpy as np

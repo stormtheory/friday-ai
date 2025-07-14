@@ -20,6 +20,7 @@ import fitz  # PyMuPDF
 import os
 from datetime import datetime
 import threading
+from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL
 
 if speech_state:
     print("Speech is ON")
@@ -221,7 +222,7 @@ with gr.Blocks() as friday_ui:
         <meta name="description" content="Friday is your personal AI assistant.">
     </head>
     """)
-    gr.Markdown("# 🤖 Friday — Your Local AI Assistant")
+    gr.Markdown(f"# {WEBUI_TOP_PAGE_BANNER}")
     
     
     with gr.Row():
@@ -233,7 +234,7 @@ with gr.Blocks() as friday_ui:
                 interactive=True
 )
     with gr.Row():
-        chatbot = gr.Chatbot(label="Friday", value=get_thread_history(get_active_thread()), show_copy_button=True)
+        chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True)
 
     with gr.Row():
         text_input = gr.Textbox(placeholder="Type here...", scale=4)
@@ -244,7 +245,7 @@ with gr.Blocks() as friday_ui:
             send_btn = gr.Button("Send")
             
         with gr.Column(scale=1):
-            mic_input = gr.Microphone(label="🎤 Speak to Friday", scale=1)
+            mic_input = gr.Microphone(label=f"{WEBUI_SPEAK_TO_TEXT_LABEL}", scale=1)
         
     with gr.Row():
         with gr.Column(scale=1):

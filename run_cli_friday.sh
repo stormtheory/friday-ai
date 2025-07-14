@@ -4,6 +4,11 @@ cd "$(dirname "$0")"
 # Written by StormTheory
 # https://github.com/stormtheory/friday-ai
 
+### Creates or opens the virtual Enviorment needed for AI tools to run
+##### Note you will need at least 4G of /tmp space available for the startup install.
+##### Virtual environment may take up 7Gbs of space for all needed packages.
+##### Runs the creating and installing of the virtual environment setup one time.
+
 if [ ! -d ./.venv ];then
 #### Build the Env Box
 	if apt list |grep -q python3.12-venv;then

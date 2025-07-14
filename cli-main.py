@@ -12,7 +12,7 @@ import config
 import atexit
 import os
 import pyttsx3
-from config import ENABLE_SPEECH_INPUT, ENABLE_SPEECH_OUTPUT
+from config import ENABLE_SPEECH_INPUT,ASSISTANT_PROMPT_NAME,GREEN,RESET,BLUE,YELLOW,CLI_FRIDAY_WELCOME_MESSAGE,CLI_FRIDAY_EXIT_MESSAGE
 from modules.speech_state import speech_state
 engine = pyttsx3.init()
 
@@ -22,7 +22,7 @@ load_context()
 def get_prompt():
     mic = "[🎤 ON]" if ENABLE_SPEECH_INPUT else "[🎤 OFF]"
     speech = "[🔈 ON]" if speech_state else "[🔇 OFF]"
-    return f"{config.RESET}{mic} {speech} {config.BLUE}User: {config.YELLOW} "
+    return f"{RESET}{mic} {speech} {BLUE}User: {YELLOW} "
 
 def get_user_input():
     if ENABLE_SPEECH_INPUT:
@@ -36,7 +36,7 @@ if os.path.exists(histfile):
 readline.parse_and_bind("tab: complete")
 atexit.register(readline.write_history_file, histfile)
 
-WELCOME_MESSAGE = f"{config.GREEN}👋 {config.ASSISTANT_NAME} Initialized: Focused Responsive Intelligent Digital Assistant for You{config.RESET}"
+WELCOME_MESSAGE = f"{GREEN}{CLI_FRIDAY_WELCOME_MESSAGE}{RESET}"
 print(WELCOME_MESSAGE)
 print("Type 'exit' to quit.\n")
 
@@ -47,13 +47,13 @@ while True:
     #user_input = input(f"{config.BLUE}User: {config.YELLOW}")
     user_input = get_user_input()
     if user_input.lower() == "exit":
-        print(f"{config.GREEN}{config.ASSISTANT_NAME}: Goodbye! Have a productive day.{config.RESET}")
+        print(f"{GREEN}{ASSISTANT_PROMPT_NAME}: {CLI_FRIDAY_EXIT_MESSAGE}{config.RESET}")
         break
     response = handle_input(user_input)
     
     if speech_state:
-        print(f"{config.GREEN}{config.ASSISTANT_NAME}:{config.RESET}", response)
+        print(f"{GREEN}{ASSISTANT_PROMPT_NAME}:{RESET}", response)
         # Speak reply aloud
         speak(response)
     else:
-        print(f"{config.GREEN}{config.ASSISTANT_NAME}:{config.RESET}", response)
+        print(f"{GREEN}{ASSISTANT_PROMPT_NAME}:{RESET}", response)

@@ -1,16 +1,27 @@
 # friday-ai:
 FRIDAY (Friendly Responsive Intelligent Digital Assistant for You)
-F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under the name alias Stormtheory—designed to offer the power of GPT-like models with full privacy, locally ran, with security, and user control at its core.
+F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under the name alias Stormtheory — designed to offer the power of GPT-like models with full privacy, locally ran, with security, and user control at its core.
 
-Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home—no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
+Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home — no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
 
 # In the Works:
 Local API to GPT4 to allow for more tokens and more work to get done faster. UI enhancements and adding stable-diffusion-xl-base-1.0 as an option from the main webUI. More stored documents and better referancing using the local API calls.
 
 # System Requirements:
-At this time Ubuntu/Mint is only tested to be supported, and currently only supporting Nvidia GPUs but AMD can be added, but could work on RHEL/Rocky/CentOS, no Yum/DNF package support yet. Please feedback if you want a YUM/DNF .rpm package. If there is interest in other Linux flavors/families please let me know or it's just a project for me and my family :P as our daily drivers. 
+- Ubuntu/Mint is only tested to be supported.
+- Nvidia GPUs and nvidia-driver but AMD can be added.
+- 8GBs of homespace
+- 4GBs of /tmp space (first time install)
+
+Friday could work on RHEL/Rocky/CentOS, no Yum/DNF package support yet. 
+Please feedback if you want a YUM/DNF .rpm package. 
+If there is interest in other Linux flavors/families please let me know or it's just a project for me and my family :P as our daily drivers. 
 
 # INSTALL:
+ Run scripts will create(if not present) or open the virtual Enviorment needed for AI tools to run.
+ Note you will need at least 4G of /tmp space available for the first time startup install.
+ Virtual environment may take up 7Gbs of space for all needed packages.
+
 1) Download the latest released .deb package file off of github and install on your system.
 2) Build DEB Install file:
 	
@@ -31,9 +42,9 @@ At this time Ubuntu/Mint is only tested to be supported, and currently only supp
         # Install script for llama3 LLM
         friday/install_ollama.sh
 
-        # Run any of the following
-        friday/run_cli_friday.sh
+        # Run any of the following (recommend starting with run_detailed_webui_image_gen.sh as it requires more packages)
         friday/run_detailed_webui_image_gen.sh
+        friday/run_cli_friday.sh
         friday/run_webui_friday.sh
 
 # Tips/Tricks:
