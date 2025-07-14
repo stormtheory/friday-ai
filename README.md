@@ -57,8 +57,11 @@ All images generated are saved to your Pictures directory in your homespace un a
   	firefox http://127.0.0.1:7860
 
 # Image Screenshots:
-## Detailed Image Generator Local webUI
-<img width="1280" height="932" alt="Image" src="https://github.com/user-attachments/assets/4a44ad9f-feef-4156-ab19-16438a66af56" />
+### Detailed Image Generator Local webUI
+<img width="774" height="791" alt="Image" src="https://github.com/user-attachments/assets/002a07aa-40cf-44e8-8d79-16766abfc461" />
+
+#### Just the 'Advanced Settings'
+<img width="987" height="366" alt="Image" src="https://github.com/user-attachments/assets/b2d88abb-d707-4eac-bf73-83c8560a772b" />
 
 ## friday_cli
 <img width="654" height="194" alt="Image" src="https://github.com/user-attachments/assets/87a2fb25-27e0-4049-94a6-e4ab9b85302b" />
