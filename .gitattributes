@@ -1,2 +1,4 @@
 # Always keep main's version of this file
 data/active_thread.json merge=ours
+config.py merge=ours
+data/chatbox_display_threads/default.json merge=ours
