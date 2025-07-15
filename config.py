@@ -18,7 +18,7 @@ CLI_FRIDAY_WELCOME_MESSAGE = '👋 FRIDAY Initialized: Friendly Responsive Intel
 CLI_FRIDAY_EXIT_MESSAGE = 'Goodbye! Have a productive day.'
 
 ### LLM Prompts
-WEBUI_DEFAULT_MODEL = 'llama3'         # [ mistral or llama3 ]
+DEFAULT_LLM_MODEL = 'llama3'         # [ mistral or llama3 ]
 ASSISTANT_PROMPT_NAME = 'Friday'
 LLAMA3_PRE_PROMPT = 'You are Friday, a helpful, concise, AI assistant.' 
 MISTRAL_PRE_PROMPT = 'You are Friday, a helpful, concise, AI assistant. If the user rejects a suggestion, do NOT repeat the same idea. Instead, politely acknowledge and ask how else you can assist.'

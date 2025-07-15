@@ -21,7 +21,7 @@ import fitz  # PyMuPDF
 import os
 from datetime import datetime
 import threading
-from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL,WEBUI_DEFAULT_MODEL
+from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL,DEFAULT_LLM_MODEL
 
 if speech_state:
     print("Speech is ON")
@@ -279,7 +279,7 @@ with gr.Blocks() as friday_ui:
             with gr.Column(scale=0.5):
                 model_selector = gr.Dropdown(
             choices=available_models,
-            value=WEBUI_DEFAULT_MODEL,
+            value=DEFAULT_LLM_MODEL,
             label="Model",
             interactive=True
         )    

@@ -3,7 +3,7 @@
 
 # core/router.py
 
-from config import ASSISTANT_PROMPT_NAME
+from config import ASSISTANT_PROMPT_NAME,DEFAULT_LLM_MODEL
 from modules import coder, system_tasks, info, memory, image_gen
 from modules.voice import stop_audio
 from utils.fuzzy import match_command
@@ -17,7 +17,7 @@ IMAGE_KEYWORDS = [
     "draw a picture", "paint a picture"
 ]
 
-def handle_input(user_input, model_name="mistral"):
+def handle_input(user_input, model_name=DEFAULT_LLM_MODEL):
     user_input = user_input.strip()
     if not user_input:
         return "Please type something."
