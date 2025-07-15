@@ -9,27 +9,11 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
-if [ ! -d ./.venv ];then
+if [ -d ./.venv ];then
 #### Build the Env Box
 	APT_LIST=$(apt list 2>/dev/null)
-        if echo "$APT_LIST"|grep -q python3.12-venv;then
-		echo "✅ Installed..."
-	else
-		echo "⚠️ Installing python3.12-venv"
-		sudo apt install python3.12-venv
-	fi
-	
-	if echo "$APT_LIST"|grep -q portaudio19-dev;then
-		echo "✅ Installed..."
-	else
-	read -p "⚠️ Install portaudio19-dev for audio? [y] > " ANS
-		if [ "$ANS" == y ];then
-			sudo apt install portaudio19-dev
-		fi
-	fi
-
-	if echo "$APT_LIST"|grep -q nvidia-driver;then
-                if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
+	if echo "$APT_LIST"| grep -q nvidia-driver;then
+                if echo "$APT_LIST" |grep -q nvidia-cuda-toolkit;then
                         echo "✅ Installed..."
                 else
                         read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
@@ -38,25 +22,14 @@ if [ ! -d ./.venv ];then
                         fi
                 fi
         fi
+exit
 	
-	# 1. Create a virtual environment
-		python3 -m venv ./.venv
-
-	# 2. Activate it
+	# 1. Activate it
 		source ./.venv/bin/activate
 
-	# 3. Update
+	# 2. Update
 		pip install --upgrade pip
 
-#### Audio/Voice
-	pip install pyttsx3
-
-#### Voice
-	if echo "$APT_LIST"|grep -q portaudio19-dev;then
-		pip install SpeechRecognition pyaudio
-		pip install gTTS
-	fi
-	
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)
 	pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
@@ -66,23 +39,23 @@ if [ ! -d ./.venv ];then
 	pip install diffusers transformers accelerate safetensors
 	pip install xformers
 
-#### webui
-	pip install gradio  # WebGUI
-	pip install pymupdf # PDF
+#### Mistral
+	if [ $(which cmake | wc -l) -gt 0 ]; then
+  		echo "✅ CMake found."
+	else
+  		echo "⚠️ CMake not found. Installing..."
+  		sudo  apt install -y cmake
+	fi
 
-#### Indexing / RAG
-	pip install sentence_transformers
-	pip install langchain
-	pip install sentence_transformers
-
-	pip install faiss-cpu
-	#pip install faiss-gpu
+	pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --extra-index-url https://abetlen.github.io/llama-cpp-python-cu121
+	pip install git+https://github.com/huggingface/huggingface_hub.git
+	#pip install huggingface-hub
+	mkdir -p ./.venv/models/mistral/
+	cd ./.venv/models/mistral/
+	huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.1-GGUF mistral-7b-instruct-v0.1.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
+	cd -
+else
+	echo "⚠️  ./.venv which is the Virtual Environment is not present..."
+	exit
 fi
-
-#### Run the Box
-	source ./.venv/bin/activate
-	export PYTHONWARNINGS="ignore"
-#### Run the AI
-	echo "Starting the AI"
-	python -m webui
 	exit

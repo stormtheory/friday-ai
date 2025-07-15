@@ -11,14 +11,15 @@ cd "$(dirname "$0")"
 
 if [ ! -d ./.venv ];then
 #### Build the Env Box
-	if apt list |grep -q python3.12-venv;then
+	APT_LIST=$(apt list 2>/dev/null)
+        if echo "$APT_LIST"|grep -q python3.12-venv;then
 		echo "✅ Installed..."
 	else
 		echo "⚠️ Installing python3.12-venv"
 		sudo apt install python3.12-venv
 	fi
 	
-	if apt list |grep -q portaudio19-dev;then
+	if echo "$APT_LIST"|grep -q portaudio19-dev;then
 		echo "✅ Installed..."
 	else
 	read -p "⚠️ Install portaudio19-dev for audio? [y] > " ANS
@@ -27,8 +28,8 @@ if [ ! -d ./.venv ];then
 		fi
 	fi
 
-	if apt list| grep -q nvidia-driver;then
-		if apt list |grep -q nvidia-cuda-toolkit;then
+	if echo "$APT_LIST"|grep -q nvidia-driver;then
+		if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
                 	echo "✅ Installed..."
         	else
         		read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
@@ -51,7 +52,7 @@ if [ ! -d ./.venv ];then
 	pip install pyttsx3
 
 #### Voice
-	if apt list |grep -q portaudio19-dev;then
+	if echo "$APT_LIST"|grep -q portaudio19-dev;then
 		pip install SpeechRecognition pyaudio
 		pip install gTTS
 	fi
