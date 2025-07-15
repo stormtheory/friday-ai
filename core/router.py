@@ -6,7 +6,8 @@
 import config
 from modules import coder, system_tasks, info, memory, image_gen
 from modules.voice import stop_audio
-from modules.llm_engine import query_llama3
+from modules.llm_llama3 import query_llama3
+from modules.llm_mistral import query_mistral
 from utils.fuzzy import match_command
 from modules.speech_state import speech_state
 import time
@@ -18,7 +19,7 @@ IMAGE_KEYWORDS = [
     "draw a picture", "paint a picture"
 ]
 
-def handle_input(user_input):
+def handle_input(user_input, model_name="mistral"):
     user_input = user_input.strip()
     if not user_input:
         return "Please type something."
@@ -71,7 +72,7 @@ def handle_input(user_input):
     # Context summarization
     if user_input.lower() == "summarize context":
         from modules.context import extract_older_context
-        from modules.llm_engine import summarize_context
+        from modules.llm_llama3 import summarize_context
         chunks = extract_older_context(5)
         if not chunks:
             return "🧠 Not enough context to summarize."
@@ -80,7 +81,17 @@ def handle_input(user_input):
             memory.remember(f"context_summary_{int(time.time())}", summary)
         return f"📝 Summary stored: {summary}"
 
-    # Fallback to LLM with memory + RAG + context
-    print("llama3")
-    return query_llama3(user_input)
+
+    
+    if model_name == "llama3":
+        # Fallback to LLM with memory + RAG + context
+        print("llama3")
+        return query_llama3(user_input)
+    elif model_name == "mistral":
+        # Fallback to llama-cpp Mistral local
+        response, latency, tokens = query_mistral(user_input)
+        print(f"[Mistral] {tokens} tokens in {latency:.2f}s")
+        pass
+    return response
+
 

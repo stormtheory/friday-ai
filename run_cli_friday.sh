@@ -12,16 +12,16 @@ cd "$(dirname "$0")"
 if [ ! -d ./.venv ];then
 #### Build the Env Box
 	if apt list |grep -q python3.12-venv;then
-		echo "Installed..."
+		echo "✅ Installed..."
 	else
-		echo "Installing python3.12-venv"
+		echo "⚠️ Installing python3.12-venv"
 		sudo apt install python3.12-venv
 	fi
 	
 	if apt list |grep -q portaudio19-dev;then
-		echo "Installed..."
+		echo "✅ Installed..."
 	else
-	read -p "Install portaudio19-dev for audio? [y] > " ANS
+	read -p "⚠️ Install portaudio19-dev for audio? [y] > " ANS
 		if [ "$ANS" == y ];then
 			sudo apt install portaudio19-dev
 		fi
