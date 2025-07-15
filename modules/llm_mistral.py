@@ -28,11 +28,27 @@ llm = Llama(
     verbose=False,
 )
 
+def trim_predictive_tail(text: str) -> str:
+    cut_phrases = [
+        "Would you like",
+        "Can I help",
+        "Is there anything else",
+        "Let me know if",
+        "Do you want",
+        "Anything else"
+    ]
+    for phrase in cut_phrases:
+        if phrase in text:
+            return text.split(phrase)[0].strip()
+    return text.strip()
+
+
 def build_prompt(user_input: str, thread=None) -> str:
     if thread is None:
         thread = get_active_thread()
 
-    prompt = f"<|system|>\n{MISTRAL_PRE_PROMPT.strip()}\n"
+    prompt = f"<|system|>\n{MISTRAL_PRE_PROMPT.strip()}\nYou must respond only to the current <|user|> input. Do not assume future turns or ask follow-up questions.\n"
+
 
     context = get_context(thread)
     for turn in context:
@@ -79,11 +95,12 @@ def query_mistral(user_input: str, max_new_tokens: int = 200):
             response = llm(
                 prompt,
                 max_tokens=max_new_tokens,
-                stop=[f"\nUser:", f"\n{ASSISTANT_PROMPT_NAME}:"]
+                stop=["<|user|>", "<|assistant|>"]  # Matches your prompt tokens exactly
             )
             latency = time.time() - start
 
-            output = response['choices'][0]['text'].strip()
+            raw_output = response['choices'][0]['text']
+            output = trim_predictive_tail(raw_output)
 
             input_tokens = len(prompt.split())
             output_tokens = len(output.split())
@@ -92,6 +109,7 @@ def query_mistral(user_input: str, max_new_tokens: int = 200):
             add(user_input, output, thread)
 
             logger.info(f"Mistral inference success (tokens: {total_tokens}, latency: {latency:.2f}s)")
+
             return output, latency, total_tokens
 
         except Exception as e:

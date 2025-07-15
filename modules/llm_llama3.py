@@ -72,6 +72,20 @@ def query_llama3(user_input: str) -> str:
     except Exception as e:
         return f"❌ Failed to run model: {e}"
 
+def trim_predictive_tail(text: str) -> str:
+    cut_phrases = [
+        "Would you like",
+        "Can I help",
+        "Is there anything else",
+        "Let me know if",
+        "Do you want",
+        "Anything else"
+    ]
+    for phrase in cut_phrases:
+        if phrase in text:
+            return text.split(phrase)[0].strip()
+    return text.strip()
+
 def summarize_context(chunks) -> str:
     summary_prompt = "You are an AI assistant summarizing a conversation.\n\n"
     for turn in chunks:

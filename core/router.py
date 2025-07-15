@@ -3,11 +3,9 @@
 
 # core/router.py
 
-import config
+from config import ASSISTANT_PROMPT_NAME
 from modules import coder, system_tasks, info, memory, image_gen
 from modules.voice import stop_audio
-from modules.llm_llama3 import query_llama3
-from modules.llm_mistral import query_mistral
 from utils.fuzzy import match_command
 from modules.speech_state import speech_state
 import time
@@ -44,9 +42,9 @@ def handle_input(user_input, model_name="mistral"):
             desc = desc.replace(kw, "")
         desc = desc.replace("of", "").strip()
         if not desc:
-            return f"{config.ASSISTANT_NAME}: Please describe what you want me to generate."
+            return f"{ASSISTANT_PROMPT_NAME}: Please describe what you want me to generate."
         path = image_gen.generate_image(desc)
-        return f"{config.ASSISTANT_NAME}: Image saved at {path}"
+        return f"{ASSISTANT_PROMPT_NAME}: Image saved at {path}"
 
     # Memory commands
     if matched == "remember":
@@ -61,7 +59,7 @@ def handle_input(user_input, model_name="mistral"):
     elif matched == "list":
         return memory.list_memory()
     elif matched == "exit":
-        return f"{config.ASSISTANT_NAME}: Goodbye! Have a productive day."
+        return f"{ASSISTANT_PROMPT_NAME}: Goodbye! Have a productive day."
 
     # System commands
     #if "open" in user_input or "run" in user_input:
@@ -85,10 +83,12 @@ def handle_input(user_input, model_name="mistral"):
     
     if model_name == "llama3":
         # Fallback to LLM with memory + RAG + context
+        from modules.llm_llama3 import query_llama3
         print("llama3")
         return query_llama3(user_input)
     elif model_name == "mistral":
         # Fallback to llama-cpp Mistral local
+        from modules.llm_mistral import query_mistral
         response, latency, tokens = query_mistral(user_input)
         print(f"[Mistral] {tokens} tokens in {latency:.2f}s")
         pass

@@ -31,7 +31,8 @@ else:
 
 #### Remember where we left off
 load_context()
- 
+speech_state = enabled_speech_default()
+
 #######################################################################################
 available_models = ["mistral", "llama3"]
 current_model = gr.State("mistral")  # default model
@@ -257,42 +258,46 @@ with gr.Blocks() as friday_ui:
     
     
     with gr.Row():
-        with gr.Column(scale=1):
-            thread_selector = gr.Radio(
+        thread_selector = gr.Radio(
                 choices=list_threads(),           # this returns a list of strings
                 label="🧵 Threads",
                 value=get_active_thread(),        # this returns the active thread name string
-                interactive=True
-)
+                interactive=True)
+        new_thread_name = gr.Textbox(label="➕ New Thread", placeholder="e.g. trip-planning")
+
     with gr.Row():
         chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True)
 
     with gr.Row(scale=0.5):
         text_input = gr.Textbox(placeholder="Type here...", scale=4)
-    
-        model_selector = gr.Dropdown(
+        with gr.Column(scale=0.5):
+            voice_toggle_btn = gr.Button("[🔈 Audio]" if speech_state else "[🔇 Audio]", scale=0.5)
+            send_btn = gr.Button("Send", scale=0.5)
+        
+    with gr.Accordion("Microphone/Advanced Options", open=False):
+        with gr.Row(scale=0.5):
+            with gr.Column(scale=0.5):
+                model_selector = gr.Dropdown(
             choices=available_models,
             value=WEBUI_DEFAULT_MODEL,
             label="Model",
             interactive=True
-        )
-    with gr.Row(scale=0.5):
-        with gr.Column(scale=1):
-            speech_state = enabled_speech_default()
-            voice_toggle_btn = gr.Button("[🔈 Speech enabled]" if speech_state else "[🔇 Speech disabled]")
-            send_btn = gr.Button("Send")
-            
-        with gr.Column(scale=1):
-            mic_input = gr.Microphone(label=f"{WEBUI_SPEAK_TO_TEXT_LABEL}", scale=1)
-        
-    with gr.Row(scale=0.5):
-        with gr.Column(scale=1):
-            file_upload = gr.File(label="📁 Upload File (.txt or .pdf)", file_types=[".txt", ".pdf", ".json"], scale=0.5, elem_id="upload_box")
-        with gr.Column(scale=1):
-            new_thread_name = gr.Textbox(label="➕ New Thread", placeholder="e.g. trip-planning")
-            file_status = gr.Textbox(label="File Status", interactive=False, scale=1)
-            uploaded_files_md = gr.Markdown(value=list_uploaded_files(get_active_thread()), label="📁 Uploaded Files")
-            delete_thread_btn = gr.Button("🗑️ Delete Current Thread")
+        )    
+            with gr.Column(scale=0.5):
+                mic_input = gr.Microphone(label=f"{WEBUI_SPEAK_TO_TEXT_LABEL}", scale=0.5)
+    
+    # 🔽 (collapsed by default)
+    with gr.Accordion("File Management", open=False):    
+        with gr.Row(scale=0.5):
+            with gr.Column(scale=0.5):
+                file_upload = gr.File(label="📁 Upload File (.txt or .pdf)", file_types=[".txt", ".pdf", ".json"], scale=0.5, elem_id="upload_box")
+            with gr.Column(scale=0.5):
+                
+                file_status = gr.Textbox(label="File Status", interactive=False, scale=1)
+                uploaded_files_md = gr.Markdown(value=list_uploaded_files(get_active_thread()), label="📁 Uploaded Files")
+    # 🔽 (collapsed by default)
+    with gr.Accordion("Delete Current Thread", open=False):
+                delete_thread_btn = gr.Button("🗑️ Delete Current Thread")
 
 
 # Bind events AFTER creating the widgets
