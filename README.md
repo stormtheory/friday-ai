@@ -9,9 +9,11 @@ Local API to GPT4 to allow for more tokens and more work to get done faster. UI 
 
 # System Requirements:
 - Ubuntu/Mint is only tested to be supported.
-- Nvidia GPUs and nvidia-driver but AMD can be added.
-- 8GBs of homespace
-- 4GBs of /tmp space (first time install)
+- Nvidia GPU(s) and nvidia-driver but AMD can be added.
+	- Tested with a 8GB NVIDIA RTX 3060 TI
+- At least 8GBs or 14GBs of homespace depending on the number of AI models
+- At least 20GBs of Harddrive space
+- At least 4GBs of /tmp space (first time install)
 
 Friday could work on RHEL/Rocky/CentOS, no Yum/DNF package support yet. 
 Please feedback if you want a YUM/DNF .rpm package. 
