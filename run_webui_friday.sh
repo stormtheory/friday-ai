@@ -11,14 +11,15 @@ cd "$(dirname "$0")"
 
 if [ ! -d ./.venv ];then
 #### Build the Env Box
-	if apt list |grep -q python3.12-venv;then
+	APT_LIST=$(apt list 2>/dev/null)
+        if echo "$APT_LIST"|grep -q python3.12-venv;then
 		echo "✅ Installed..."
 	else
 		echo "⚠️ Installing python3.12-venv"
 		sudo apt install python3.12-venv
 	fi
 	
-	if apt list |grep -q portaudio19-dev;then
+	if echo "$APT_LIST"|grep -q portaudio19-dev;then
 		echo "✅ Installed..."
 	else
 	read -p "⚠️ Install portaudio19-dev for audio? [y] > " ANS
@@ -27,8 +28,8 @@ if [ ! -d ./.venv ];then
 		fi
 	fi
 
-	if apt list| grep -q nvidia-driver;then
-                if apt list |grep -q nvidia-cuda-toolkit;then
+	if echo "$APT_LIST"|grep -q nvidia-driver;then
+                if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
                         echo "✅ Installed..."
                 else
                         read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
@@ -51,7 +52,7 @@ if [ ! -d ./.venv ];then
 	pip install pyttsx3
 
 #### Voice
-	if apt list |grep -q portaudio19-dev;then
+	if echo "$APT_LIST"|grep -q portaudio19-dev;then
 		pip install SpeechRecognition pyaudio
 		pip install gTTS
 	fi
@@ -76,22 +77,6 @@ if [ ! -d ./.venv ];then
 
 	pip install faiss-cpu
 	#pip install faiss-gpu
-
-#### Mistral
-	if [ $(which cmake | wc -l) -gt 0 ]; then
-  		echo "✅ CMake found."
-	else
-  		echo "⚠️ CMake not found. Installing..."
-  		sudo  apt install -y cmake
-	fi
-
-	pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --extra-index-url https://abetlen.github.io/llama-cpp-python-cu121
-	pip install git+https://github.com/huggingface/huggingface_hub.git
-	#pip install huggingface-hub
-	mkdir -p ./.venv/models/mistral/
-	cd ./.venv/models/mistral/
-	huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.1-GGUF mistral-7b-instruct-v0.1.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
-	cd -
 fi
 
 #### Run the Box
