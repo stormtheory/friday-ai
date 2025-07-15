@@ -56,7 +56,7 @@ def add(user_msg, assistant_msg, thread=None):
     save_context(context, thread)
 
 def summarize_and_trim(context, thread=None):
-    from modules.llm_engine import summarize_context
+    from modules.llm_llama3 import summarize_context
 
     to_summarize = context[:5]
     rest = context[5:]

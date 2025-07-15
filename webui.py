@@ -15,12 +15,13 @@ from modules.speech_state import speech_state
 from modules.voice import speak  # Your gTTS or pyttsx3 wrapper
 from modules.thread_manager import get_active_thread, get_thread_history, save_thread_history, list_threads, switch_thread, create_thread, delete_thread
 from utils.file_utils import extract_text_from_json
+from core import router
 import json
 import fitz  # PyMuPDF
 import os
 from datetime import datetime
 import threading
-from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL
+from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL,DEFAULT_LLM_MODEL
 
 if speech_state:
     print("Speech is ON")
@@ -30,15 +31,19 @@ else:
 
 #### Remember where we left off
 load_context()
- 
+speech_state = enabled_speech_default()
+
 #######################################################################################
-def handle_input(user_input, chatbox_display_history):
+available_models = ["mistral", "llama3"]
+current_model = gr.State("mistral")  # default model
+
+
+def handle_input(user_input, chatbox_display_history, selected_model):
     if chatbox_display_history is None:
         chatbox_display_history = []
 
-    from core import router  # Ensure import at the top
     # 🔁 Run the model
-    response = router.handle_input(user_input)
+    response = router.handle_input(user_input, model_name=selected_model)
 
     chatbox_display_history.append((user_input, response))
 
@@ -170,10 +175,15 @@ def handle_file(file_path):
 ################################################################################
 
 def on_switch_thread(selected_name):
+    if not selected_name:
+        # No thread selected or no threads exist
+        return gr.update(value=[]), gr.update(value=""), gr.update(value="No files uploaded.")
+    
     switch_thread(selected_name)
-    history = get_thread_history(selected_name)
-    files_md = list_uploaded_files(selected_name)
+    history = get_thread_history(selected_name) or []
+    files_md = list_uploaded_files(selected_name) or "No files uploaded."
     return gr.update(value=history), gr.update(value=selected_name), gr.update(value=files_md)
+
 
 def on_new_thread(name=None):
     if not name or name.strip() == "":
@@ -181,18 +191,37 @@ def on_new_thread(name=None):
     create_thread(name)
     switch_thread(name)
     threads = list_threads()
-    return gr.update(choices=threads, value=name), name, []
+    # Ensure threads is non-empty
+    return gr.update(choices=threads or [], value=name), name, []
+
 
 def on_delete_thread(current):
     delete_thread(current)
     threads = list_threads()
-    fallback = threads[0] if threads else None
-    if fallback:
-        switch_thread(fallback)
-        history = get_thread_history(fallback)
-    else:
-        history = []
+
+    if not threads:
+        # Create a default thread to avoid empty state
+        default_thread = "default"
+        create_thread(default_thread)
+        switch_thread(default_thread)
+        threads = list_threads()
+        history = get_thread_history(default_thread) or []
+        return gr.update(choices=threads, value=default_thread), default_thread, history
+
+    fallback = threads[0]
+    switch_thread(fallback)
+    history = get_thread_history(fallback) or []
     return gr.update(choices=threads, value=fallback), fallback, history
+
+# Ensure there is always a thread
+def ensure_default_thread():
+    threads = list_threads()
+    if not threads:
+        create_thread("default")
+        switch_thread("default")
+        threads = list_threads()
+    return threads
+
 
 #################################################################################
 
@@ -212,8 +241,11 @@ def handle_audio(audio_path, chatbox_display_history):
 
 ############################# GUI ###################################################
 
-thread_names = gr.State(list_threads())
+threads = ensure_default_thread()
+
+thread_names = gr.State(threads)
 active_thread = gr.State(get_active_thread())
+
 
 with gr.Blocks() as friday_ui:
     gr.HTML("""
@@ -226,40 +258,53 @@ with gr.Blocks() as friday_ui:
     
     
     with gr.Row():
-        with gr.Column(scale=1):
-            thread_selector = gr.Radio(
+        thread_selector = gr.Radio(
                 choices=list_threads(),           # this returns a list of strings
                 label="🧵 Threads",
                 value=get_active_thread(),        # this returns the active thread name string
-                interactive=True
-)
+                interactive=True)
+        new_thread_name = gr.Textbox(label="➕ New Thread", placeholder="e.g. trip-planning")
+
     with gr.Row():
         chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True)
 
-    with gr.Row():
+    with gr.Row(scale=0.5):
         text_input = gr.Textbox(placeholder="Type here...", scale=4)
-
-        with gr.Column(scale=1):
-            speech_state = enabled_speech_default()
-            voice_toggle_btn = gr.Button("[🔈 Speech enabled]" if speech_state else "[🔇 Speech disabled]")
-            send_btn = gr.Button("Send")
-            
-        with gr.Column(scale=1):
-            mic_input = gr.Microphone(label=f"{WEBUI_SPEAK_TO_TEXT_LABEL}", scale=1)
+        with gr.Column(scale=0.5):
+            voice_toggle_btn = gr.Button("[🔈 Audio]" if speech_state else "[🔇 Audio]", scale=0.5)
+            send_btn = gr.Button("Send", scale=0.5)
         
-    with gr.Row():
-        with gr.Column(scale=1):
-            file_upload = gr.File(label="📁 Upload File (.txt or .pdf)", file_types=[".txt", ".pdf", ".json"], scale=0.5, elem_id="upload_box")
-        with gr.Column(scale=1):
-            new_thread_name = gr.Textbox(label="➕ New Thread", placeholder="e.g. trip-planning")
-            file_status = gr.Textbox(label="File Status", interactive=False, scale=1)
-            uploaded_files_md = gr.Markdown(value=list_uploaded_files(get_active_thread()), label="📁 Uploaded Files")
-            delete_thread_btn = gr.Button("🗑️ Delete Current Thread")
+    with gr.Accordion("Microphone/Advanced Options", open=False):
+        with gr.Row(scale=0.5):
+            with gr.Column(scale=0.5):
+                model_selector = gr.Dropdown(
+            choices=available_models,
+            value=DEFAULT_LLM_MODEL,
+            label="Model",
+            interactive=True
+        )    
+            with gr.Column(scale=0.5):
+                mic_input = gr.Microphone(label=f"{WEBUI_SPEAK_TO_TEXT_LABEL}", scale=0.5)
+    
+    # 🔽 (collapsed by default)
+    with gr.Accordion("File Management", open=False):    
+        with gr.Row(scale=0.5):
+            with gr.Column(scale=0.5):
+                file_upload = gr.File(label="📁 Upload File (.txt or .pdf)", file_types=[".txt", ".pdf", ".json"], scale=0.5, elem_id="upload_box")
+            with gr.Column(scale=0.5):
+                
+                file_status = gr.Textbox(label="File Status", interactive=False, scale=1)
+                uploaded_files_md = gr.Markdown(value=list_uploaded_files(get_active_thread()), label="📁 Uploaded Files")
+    # 🔽 (collapsed by default)
+    with gr.Accordion("Delete Current Thread", open=False):
+                delete_thread_btn = gr.Button("🗑️ Delete Current Thread")
 
 
 # Bind events AFTER creating the widgets
-    send_btn.click(handle_input, inputs=[text_input, chatbot], outputs=[text_input, chatbot])
-    text_input.submit(handle_input, inputs=[text_input, chatbot], outputs=[text_input, chatbot])
+    #send_btn.click(handle_input, inputs=[text_input, chatbot], outputs=[text_input, chatbot])
+    #text_input.submit(handle_input, inputs=[text_input, chatbot], outputs=[text_input, chatbot])
+    send_btn.click(handle_input, inputs=[text_input, chatbot, model_selector], outputs=[text_input, chatbot])
+    text_input.submit(handle_input, inputs=[text_input, chatbot, model_selector], outputs=[text_input, chatbot])
     file_upload.change(handle_file, inputs=file_upload, outputs=[file_status, uploaded_files_md])       
 
     voice_toggle_btn.click(toggle_voice, [], [voice_toggle_btn])
@@ -270,6 +315,8 @@ with gr.Blocks() as friday_ui:
     delete_thread_btn.click(on_delete_thread, inputs=[thread_selector], outputs=[thread_selector, active_thread, chatbot])
     
     new_thread_name.submit(on_new_thread, inputs=[new_thread_name], outputs=[thread_selector, thread_selector, chatbot])
+
+    
 
 
 friday_ui.launch()
