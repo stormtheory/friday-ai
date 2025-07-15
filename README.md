@@ -39,8 +39,11 @@ If there is interest in other Linux flavors/families please let me know or it's 
 
 	Extract directory from the zip file. Run the following commands within the directory.
 
-        # Install script for llama3 LLM
+        # Install script for llama3 LLM:
         friday/install_ollama.sh
+
+	# If you want to try the French Fully-Opensource LLM Mistral then:
+	friday/install_mistral_from_TheBloke.sh
 
         # Run any of the following (recommend starting with run_detailed_webui_image_gen.sh as it requires more packages)
         friday/run_detailed_webui_image_gen.sh
