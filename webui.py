@@ -36,7 +36,7 @@ speech_state = enabled_speech_default()
 
 #######################################################################################
 available_models = [DEFAULT_LLM_MODEL, "mistral-ollama", "mistral", "llama3"]
-current_model = gr.State(DEFAULT_LLM_MODEL)  # default model
+current_model = gr.State(get_thread_model(get_active_thread()))  # ✅ load model from active thread
 
 
 def handle_input(user_input, chatbox_display_history, selected_model):
@@ -186,11 +186,12 @@ def handle_file(file_path):
 def on_switch_thread(selected_name):
     if not selected_name:
         return (
-            gr.update(value=[]),
-            gr.update(value=""),
-            gr.update(value="No files uploaded."),
-            gr.update(value=DEFAULT_LLM_MODEL)  # fallback model
-        )
+        gr.update(value=history),
+        gr.update(value=selected_name),
+        gr.update(value=files_md),
+        gr.update(value=model)  # ✅ this updates model_selector
+    )
+
 
     switch_thread(selected_name)
     history = get_thread_history(selected_name) or []
@@ -286,7 +287,7 @@ with gr.Blocks() as friday_ui:
         new_thread_name = gr.Textbox(label="➕ New Thread", placeholder="e.g. trip-planning")
 
     with gr.Row():
-        chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True)
+        chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True, show_delete_button=False)
 
     with gr.Row(scale=0.5):
         text_input = gr.Textbox(placeholder="Type here...", scale=4)
@@ -298,11 +299,12 @@ with gr.Blocks() as friday_ui:
         with gr.Row(scale=0.5):
             with gr.Column(scale=0.5):
                 model_selector = gr.Dropdown(
-            choices=available_models,
-            value=DEFAULT_LLM_MODEL,
-            label="Model",
-            interactive=True
-        )    
+                    choices=available_models,
+                    value=current_model,  # ✅ dynamically assigned
+                    label="Model",
+                    interactive=True
+                    )
+
             with gr.Column(scale=0.5):
                 mic_input = gr.Microphone(label=f"{WEBUI_SPEAK_TO_TEXT_LABEL}", scale=0.5)
     
@@ -321,8 +323,6 @@ with gr.Blocks() as friday_ui:
 
 
 # Bind events AFTER creating the widgets
-    #send_btn.click(handle_input, inputs=[text_input, chatbot], outputs=[text_input, chatbot])
-    #text_input.submit(handle_input, inputs=[text_input, chatbot], outputs=[text_input, chatbot])
     send_btn.click(handle_input, inputs=[text_input, chatbot, model_selector], outputs=[text_input, chatbot])
     text_input.submit(handle_input, inputs=[text_input, chatbot, model_selector], outputs=[text_input, chatbot])
     file_upload.change(handle_file, inputs=file_upload, outputs=[file_status, uploaded_files_md])       
@@ -332,7 +332,7 @@ with gr.Blocks() as friday_ui:
     mic_input.change(handle_audio, [mic_input, chatbot], outputs=[text_input, chatbot])
     
     model_selector.change(on_model_change, inputs=[model_selector], outputs=[model_selector])
-    thread_selector.change(on_switch_thread,inputs=[thread_selector],outputs=[chatbot, active_thread, uploaded_files_md, model_selector])
+    thread_selector.change(on_switch_thread, inputs=[thread_selector], outputs=[chatbot, active_thread, uploaded_files_md, model_selector])
     delete_thread_btn.click(on_delete_thread, inputs=[thread_selector], outputs=[thread_selector, active_thread, chatbot])
     
     new_thread_name.submit(on_new_thread, inputs=[new_thread_name], outputs=[thread_selector, thread_selector, chatbot])
