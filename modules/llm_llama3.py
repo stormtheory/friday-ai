@@ -1,105 +1,135 @@
 # Written by StormTheory
 # https://github.com/stormtheory/friday-ai
 
+import requests
+import time
 from modules.context import get_context, add, get_long_term_summaries
 from modules.memory import list_memory
 from modules.rag import retrieve_context_rag
-from modules.thread_manager import get_active_thread, get_thread_history, save_thread_history, list_threads, switch_thread, create_thread, delete_thread
+from modules.thread_manager import get_active_thread
+from config import LLAMA3_PRE_PROMPT, ASSISTANT_PROMPT_NAME
 
-import subprocess
-from modules import memory
-from modules.context import get_context  # NEW: track conversation
-from config import LLAMA3_PRE_PROMPT,ASSISTANT_PROMPT_NAME
+OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
+MAX_TOKENS = 4096
+TIMEOUT = 60  # seconds
 
-def query_llama3(user_input: str) -> str:
-    try:
+def build_prompt(user_input: str, thread=None) -> str:
+    """
+    Compose prompt with context, memory, RAG, and summaries in a natural dialog format.
+    """
+    if thread is None:
         thread = get_active_thread()
 
-        # Static header
-        prompt = f"{LLAMA3_PRE_PROMPT}\n\n"
+    prompt = f"{LLAMA3_PRE_PROMPT}\n\n"
 
-        # User input
-        prompt += f"My current quetion or statement\nUser: {user_input}\n{ASSISTANT_PROMPT_NAME}:\n\n"
+    # Current user query
+    prompt += f"My current question or statement\nUser: {user_input}\n{ASSISTANT_PROMPT_NAME}:\n\n"
 
-        # Chat context
-        context = get_context(thread)
-        if context:
-            prompt += "Context:\n"
-            for turn in context:
-                prompt += f"User: {turn['user']}\n{ASSISTANT_PROMPT_NAME}: {turn['assistant']}\n"
+    # Add recent conversation context
+    context = get_context(thread)
+    if context:
+        prompt += "Context:\n"
+        for turn in context:
+            prompt += f"User: {turn['user']}\n{ASSISTANT_PROMPT_NAME}: {turn['assistant']}\n"
 
-        context_summary = get_long_term_summaries(thread)
-        if context_summary:
-            prompt += "Context Summaries:\n"
-            prompt += f"{context_summary}\n"
+    # Add context summaries
+    context_summary = get_long_term_summaries(thread)
+    if context_summary:
+        prompt += "Context Summaries:\n"
+        prompt += f"{context_summary}\n"
 
-        # RAG (retrieved docs)
-        rag_context = retrieve_context_rag(user_input, thread)
-        if rag_context:
-            prompt += f"\nRelevant document excerpts:\n{rag_context}\n"
-        
-        # Memory injection
-        mem = memory.list_memory()
-        if mem and "I don't have any" not in mem:
-            prompt += f"Important facts to remember:\n{mem}\n\n"
+    # Add retrieved document excerpts (RAG)
+    rag_context = retrieve_context_rag(user_input, thread)
+    if rag_context:
+        prompt += f"\nRelevant document excerpts:\n{rag_context}\n"
+    
+    # Inject memory facts
+    mem = list_memory()
+    if mem and "I don't have any" not in mem:
+        prompt += f"Important facts to remember:\n{mem}\n\n"
 
+    return prompt
 
-        print(f"prompt: {prompt}")
+def query_llama3(user_input: str, max_new_tokens: int = 256):
+    """
+    Query Llama3 model via Ollama HTTP API.
+    """
+    thread = get_active_thread()
+    prompt = build_prompt(user_input, thread)
 
-        # 🔢 Token count check
-        MAX_TOKENS = 2000
-        # Estimate tokens by characters / 3
-        #estimated_tokens = len(prompt) / 3
-        estimated_tokens = len(prompt.split())
+    # Optional token count warning (approximate)
+    # 🔢 Token count check
+    # Estimate tokens by characters / 3
+    #estimated_tokens = len(prompt) / 3
+    estimated_tokens = len(prompt.split())
+    if estimated_tokens > MAX_TOKENS:
+        print(f"⚠️ Warning: Prompt token length {estimated_tokens} exceeds max {MAX_TOKENS}")
+    else:
         print(f"🧮 Prompt token length: {estimated_tokens} / {MAX_TOKENS}")
-        if estimated_tokens > MAX_TOKENS:
-            print("⚠️ Warning: Prompt exceeds model token limit!")
-        
-        result = subprocess.run(
-            ["ollama", "run", "llama3", prompt],
-            capture_output=True, text=True, timeout=100
-        )
 
-        if result.returncode == 0:
-            response = result.stdout.strip()
-        else:
-            response = f"Error from model: {result.stderr.strip()}"
+    payload = {
+        "model": "llama3",
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "num_predict": max_new_tokens,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "top_k": 40,
+            "repeat_penalty": 1.1
+        }
+    }
 
-        # Save for context
-        add(user_input, response, thread)
-        return response
+    try:
+        start = time.time()
+        response = requests.post(OLLAMA_ENDPOINT, json=payload, timeout=TIMEOUT)
+        latency = time.time() - start
+
+        if response.status_code != 200:
+            return f"❌ Ollama API error: {response.text}"
+
+        result = response.json()
+        output = result.get("response", "").strip()
+
+        # Save interaction to context history
+        add(user_input, output, thread)
+
+        return output
 
     except Exception as e:
-        return f"❌ Failed to run model: {e}"
+        return f"❌ Ollama request failed: {e}"
 
-def trim_predictive_tail(text: str) -> str:
-    cut_phrases = [
-        "Would you like",
-        "Can I help",
-        "Is there anything else",
-        "Let me know if",
-        "Do you want",
-        "Anything else"
-    ]
-    for phrase in cut_phrases:
-        if phrase in text:
-            return text.split(phrase)[0].strip()
-    return text.strip()
 
-def summarize_context(chunks) -> str:
+def summarize_context(chunks, max_new_tokens: int = 128) -> str:
+    """
+    Summarize conversation chunks via Llama3 Ollama HTTP API.
+    """
     summary_prompt = "You are an AI assistant summarizing a conversation.\n\n"
     for turn in chunks:
         summary_prompt += f"User: {turn['user']}\n{ASSISTANT_PROMPT_NAME}: {turn['assistant']}\n"
     summary_prompt += "\nSummarize this exchange in 1–3 sentences, keeping important facts or tasks."
 
+    payload = {
+        "model": "llama3",
+        "prompt": summary_prompt,
+        "stream": False,
+        "options": {
+            "num_predict": max_new_tokens,
+            "temperature": 0.5,
+            "top_p": 0.9,
+            "top_k": 40,
+            "repeat_penalty": 1.0
+        }
+    }
+
     try:
-        result = subprocess.run(
-            ["ollama", "run", "llama3", summary_prompt],
-            capture_output=True, text=True, timeout=60
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-        else:
-            return f"Error summarizing: {result.stderr.strip()}"
+        response = requests.post(OLLAMA_ENDPOINT, json=payload, timeout=TIMEOUT)
+
+        if response.status_code != 200:
+            return f"❌ Ollama API error during summarization: {response.text}"
+
+        result = response.json()
+        return result.get("response", "").strip()
+
     except Exception as e:
-        return f"Summarization failed: {e}"
+        return f"❌ Summarization request failed: {e}"

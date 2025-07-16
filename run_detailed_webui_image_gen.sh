@@ -22,13 +22,16 @@ if [ ! -d ./.venv ];then
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=True
         PIP_INSTALL=True
-elif [ ! -f ./.venv/.$RUN ];then
+elif [ -f ./.venv/$RUN ];then
+        echo "✅ Installed... .venv"
+        echo "✅ Installed... $RUN"
+        ENV_INSTALL=False
+        PIP_INSTALL=False
+elif [ ! -f ./.venv/$RUN ];then
+	echo "✅ Installed... .venv"
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=False
         PIP_INSTALL=True
-elif [ -f ./.venv/.$RUN ];then
-        ENV_INSTALL=False
-        PIP_INSTALL=False
 else
         exit
 fi
@@ -80,11 +83,7 @@ fi
 
 
 if [ "$PIP_INSTALL" == True ];then
-        #if echo "$VIRTUAL_ENV_PROMPT"|grep -q '.venv' ];then
-        #        echo "✅ Sourced"
-        #else
-                source ./.venv/bin/activate
-        #fi
+    source ./.venv/bin/activate
 
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)
@@ -110,6 +109,7 @@ fi
 
 #### Run the Box
 	source ./.venv/bin/activate
+#### Export Variables
 	export PYTHONWARNINGS="ignore"
 	export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 #### Run the AI

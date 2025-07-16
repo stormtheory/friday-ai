@@ -47,9 +47,12 @@ If there is interest in other Linux flavors/families please let me know or it's 
         # If you want to try the French Fully-Opensource LLM Mistral then:
         friday/install_mistral_from_TheBloke.sh
 
-        # Run any of the following (recommend starting with run_detailed_webui_image_gen.sh as it requires more packages)
+        # Run any of the following depending on what you want to do.
+        ## Starts the webUI for the Image Generator
         friday/run_detailed_webui_image_gen.sh
+        ## Starts the Command Line Interface (CLI) Version of Friday
         friday/run_cli_friday.sh
+        ## Starts the webUI Version of Friday
         friday/run_webui_friday.sh
 
 # Tips/Tricks:

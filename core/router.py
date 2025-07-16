@@ -86,7 +86,11 @@ def handle_input(user_input, model_name=DEFAULT_LLM_MODEL):
         from modules.llm_llama3 import query_llama3
         print("llama3")
         return query_llama3(user_input)
-    elif model_name == "mistral":
+    elif model_name == "mistral-ollama":
+        from modules.llm_mistral_ollama import query_mistral_ollama
+        response, latency, tokens = query_mistral_ollama(user_input)
+        print(f"[Mistral-Ollama] {tokens} tokens in {latency:.2f}s")
+    elif model_name == "mistral-raw":
         # Fallback to llama-cpp Mistral local
         from modules.llm_mistral import query_mistral
         response, latency, tokens = query_mistral(user_input)
