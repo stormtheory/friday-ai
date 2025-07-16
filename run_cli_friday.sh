@@ -22,13 +22,16 @@ if [ ! -d ./.venv ];then
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=True
         PIP_INSTALL=True
-elif [ ! -f ./.venv/.$RUN ];then
+elif [ -f ./.venv/$RUN ];then
+        echo "✅ Installed... .venv"
+        echo "✅ Installed... $RUN"
+        ENV_INSTALL=False
+        PIP_INSTALL=False
+elif [ ! -f ./.venv/$RUN ];then
+	echo "✅ Installed... .venv"
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=False
         PIP_INSTALL=True
-elif [ -f ./.venv/.$RUN ];then
-        ENV_INSTALL=False
-        PIP_INSTALL=False
 else
         exit
 fi
