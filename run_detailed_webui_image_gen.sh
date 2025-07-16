@@ -84,8 +84,7 @@ if [ ! -d ./.venv ];then
 
 	# WebUI
 	pip install gradio
-	#pip install faiss-cpu
-	#pip install faiss-gpu
+
 fi
 
 #### Run the Box
