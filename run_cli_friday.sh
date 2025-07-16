@@ -9,6 +9,14 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
+# No running as root!
+ID=$(id -u)
+if [ "$ID" == '0'  ];then
+        echo "Not safe to run as root... exiting..."
+        exit
+fi
+
+
 if [ ! -d ./.venv ];then
 #### Build the Env Box
 	APT_LIST=$(apt list 2>/dev/null)
