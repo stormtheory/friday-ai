@@ -9,21 +9,32 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
+# No running as root!
+ID=$(id -u)
+if [ "$ID" == '0'  ];then
+        echo "Not safe to run as root... exiting..."
+        exit
+fi
+
 if [ -d ./.venv ];then
-#### Build the Env Box
-	APT_LIST=$(apt list 2>/dev/null)
-	if echo "$APT_LIST"| grep -q nvidia-driver;then
-                if echo "$APT_LIST" |grep -q nvidia-cuda-toolkit;then
-                        echo "✅ Installed..."
+### Checking dependencies
+        APT_LIST=$(apt list 2>/dev/null)
+        if echo "$APT_LIST"|grep -q nvidia-driver;then
+                echo "✅ Installed... nvidia-driver"
+                if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
+                        echo "✅ Installed... nvidia-cuda-toolkit"
                 else
                         read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
                         if [ "$ANS" == y ];then
                                 sudo apt install nvidia-cuda-toolkit
                         fi
                 fi
+        else
+                echo "⚠️  nvidia-driver not installed!... exiting..."
+                exit
         fi
-exit
-	
+
+#### Add to the Env Box	
 	# 1. Activate it
 		source ./.venv/bin/activate
 

@@ -18,7 +18,7 @@ fi
 
 
 if [ ! -d ./.venv ];then
-#### Build the Env Box
+### Checking dependencies
 	APT_LIST=$(apt list 2>/dev/null)
         if echo "$APT_LIST"|grep -q python3.12-venv;then
 		echo "✅ Installed..."
@@ -46,7 +46,8 @@ if [ ! -d ./.venv ];then
                         fi
                 fi
         fi
-	
+
+#### Build the Env Box	
 	# 1. Create a virtual environment
 		python3 -m venv ./.venv
 
