@@ -18,6 +18,7 @@ CLI_FRIDAY_WELCOME_MESSAGE = '👋 FRIDAY Initialized: Friendly Responsive Intel
 CLI_FRIDAY_EXIT_MESSAGE = 'Goodbye! Have a productive day.'
 
 ### LLM Prompts
+DIG_DEFAULT_PROMPT = "a samurai standing on Mars with a red sun"
 DEFAULT_LLM_MODEL = 'llama3'         # [ mistral or llama3 ]
 ASSISTANT_PROMPT_NAME = 'Friday'
 LLAMA3_PRE_PROMPT = 'You are Friday, a helpful, concise, AI assistant.' 
@@ -40,6 +41,7 @@ DIG_PICTURE_NUM_INFERENCE_STEPS = 25   # [20 to 100] Number of denoising steps t
 ### Image Save locations
 DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
 IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
+DIG_WEBUI_THREAD_DATA_DIR = "data/detail_image_gen"
 
 ### Global Memory
 MEMORY_FILE = "data/memory.json"
