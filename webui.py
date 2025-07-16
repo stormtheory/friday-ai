@@ -13,6 +13,7 @@ import gradio as gr
 from modules.voice import enabled_speech_default,is_speech_enabled,stop_audio
 from modules.speech_state import speech_state
 from modules.voice import speak  # Your gTTS or pyttsx3 wrapper
+from modules.thread_manager import set_thread_model, get_thread_model
 from modules.thread_manager import get_active_thread, get_thread_history, save_thread_history, list_threads, switch_thread, create_thread, delete_thread
 from utils.file_utils import extract_text_from_json
 from core import router
@@ -42,22 +43,30 @@ def handle_input(user_input, chatbox_display_history, selected_model):
     if chatbox_display_history is None:
         chatbox_display_history = []
 
-    # 🔁 Run the model
+    # 🔁 Run the selected model
     response = router.handle_input(user_input, model_name=selected_model)
 
     chatbox_display_history.append((user_input, response))
 
+    # 🗣️ Async speech
     def async_speak():
         if speech_state:
             speak(response)
     threading.Thread(target=async_speak).start()
 
-    # Save chat thread history
+    # 🧠 Save history and model
     thread = get_active_thread()
     save_thread_history(thread, chatbox_display_history)
+    set_thread_model(thread, selected_model)  # ✅ Save the model for the thread
 
     return "", chatbox_display_history
 
+############################################################################################
+
+def on_model_change(new_model):
+    thread = get_active_thread()
+    set_thread_model(thread, new_model)
+    return gr.update(value=new_model)
 
 ############################################################################################
 
@@ -176,13 +185,24 @@ def handle_file(file_path):
 
 def on_switch_thread(selected_name):
     if not selected_name:
-        # No thread selected or no threads exist
-        return gr.update(value=[]), gr.update(value=""), gr.update(value="No files uploaded.")
-    
+        return (
+            gr.update(value=[]),
+            gr.update(value=""),
+            gr.update(value="No files uploaded."),
+            gr.update(value=DEFAULT_LLM_MODEL)  # fallback model
+        )
+
     switch_thread(selected_name)
     history = get_thread_history(selected_name) or []
     files_md = list_uploaded_files(selected_name) or "No files uploaded."
-    return gr.update(value=history), gr.update(value=selected_name), gr.update(value=files_md)
+    model = get_thread_model(selected_name)  # ✅ Load per-thread model
+
+    return (
+        gr.update(value=history),
+        gr.update(value=selected_name),
+        gr.update(value=files_md),
+        gr.update(value=model)  # ✅ update dropdown
+    )
 
 
 def on_new_thread(name=None):
@@ -310,13 +330,11 @@ with gr.Blocks() as friday_ui:
     voice_toggle_btn.click(toggle_voice, [], [voice_toggle_btn])
    
     mic_input.change(handle_audio, [mic_input, chatbot], outputs=[text_input, chatbot])
-
-    thread_selector.change(on_switch_thread, inputs=[thread_selector], outputs=[chatbot, active_thread, uploaded_files_md])
+    
+    model_selector.change(on_model_change, inputs=[model_selector], outputs=[model_selector])
+    thread_selector.change(on_switch_thread,inputs=[thread_selector],outputs=[chatbot, active_thread, uploaded_files_md, model_selector])
     delete_thread_btn.click(on_delete_thread, inputs=[thread_selector], outputs=[thread_selector, active_thread, chatbot])
     
     new_thread_name.submit(on_new_thread, inputs=[new_thread_name], outputs=[thread_selector, thread_selector, chatbot])
-
-    
-
 
 friday_ui.launch()
