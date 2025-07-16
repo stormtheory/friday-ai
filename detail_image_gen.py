@@ -26,7 +26,6 @@ from config import (
 
 # 🔐 Thread storage directory
 DEFAULT_THREAD_NAME = "Default"
-
 torch.cuda.empty_cache()
 
 # Load the model
@@ -38,13 +37,11 @@ pipe = StableDiffusionXLPipeline.from_pretrained(
     use_safetensors=True,
     device_map="balanced"
 )
-
 pipe.reset_device_map()
 pipe.enable_model_cpu_offload()
 pipe.enable_vae_slicing()
 pipe.enable_attention_slicing()
 
-# Ensure thread config directory exists
 os.makedirs(DIG_WEBUI_THREAD_DATA_DIR, exist_ok=True)
 
 # Default config for threads
@@ -82,9 +79,15 @@ def load_config(name):
     return DEFAULT_CONFIG
 
 def list_threads():
-    return [f[:-5] for f in os.listdir(DIG_WEBUI_THREAD_DATA_DIR) if f.endswith(".json")]
+    threads = [f[:-5] for f in os.listdir(DIG_WEBUI_THREAD_DATA_DIR) if f.endswith(".json")]
+    if DEFAULT_THREAD_NAME not in threads:
+        threads.insert(0, DEFAULT_THREAD_NAME)
+    else:
+        threads = sorted(set([DEFAULT_THREAD_NAME] + threads))
+    return threads
 
-list_threads()
+def load_threads():
+    return gr.update(choices=list_threads(), value=DEFAULT_THREAD_NAME)
 
 def delete_thread(name):
     if name == DEFAULT_THREAD_NAME:
@@ -95,13 +98,33 @@ def delete_thread(name):
         return True
     return False
 
+def handle_update_thread(selected_name, prompt, neg, gs, steps, w, h, fn_prefix, save_loc):
+    selected_name = selected_name.strip()
+    if selected_name == DEFAULT_THREAD_NAME:
+        return "⚠️ Cannot update the Default thread."
+
+    config = {
+        "prompt": prompt,
+        "neg_prompt": neg,
+        "guidance_scale": gs if gs is not None else DIG_PICTURE_GUIDANCE_SCALE,
+        "steps": steps if steps is not None else DIG_PICTURE_NUM_INFERENCE_STEPS,
+        "width": w if w is not None else DIG_PICTURE_WIDTH,
+        "height": h if h is not None else DIG_PICTURE_HEIGHT,
+        "filename_prefix": fn_prefix,
+        "save_location": save_loc
+    }
+
+    save_config(selected_name, config)
+    return f"✅ Updated thread '{selected_name}'"
+
+
 # --- Thread Handlers ---
 def handle_save_thread(name, prompt, neg, gs, steps, w, h, fn_prefix, save_loc):
     name = name.strip()
     if not name:
-        return gr.update(visible=True), "⚠️ Please enter a thread name."
+        return gr.update(visible=True), "⚠️ Please enter a thread name.", gr.update()
     if name == DEFAULT_THREAD_NAME:
-        return gr.update(visible=True), "⚠️ Cannot overwrite the Default thread."
+        return gr.update(visible=True), "⚠️ Cannot overwrite the Default thread.", gr.update()
 
     config = {
         "prompt": prompt,
@@ -115,7 +138,11 @@ def handle_save_thread(name, prompt, neg, gs, steps, w, h, fn_prefix, save_loc):
     }
 
     save_config(name, config)
-    return gr.update(choices=list_threads(), value=name), f"✅ Saved thread '{name}'"
+    return (
+        gr.update(choices=list_threads(), value=name),
+        f"✅ Saved thread '{name}'",
+        gr.update(visible=False)
+    )
 
 def handle_load_thread(name):
     cfg = load_config(name)
@@ -184,14 +211,17 @@ with gr.Blocks() as image_gen:
         with gr.Row():
             save_location_input = gr.Textbox(label="Image Save Subfolder", value=DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION)
             filename_prefix_input = gr.Textbox(label="Filename Prefix", value=DIG_WEBUI_FILENAME)
+
     with gr.Accordion("Configuration Save", open=False):
         with gr.Row():
-            thread_selector = gr.Dropdown(label="Select Thread", choices=list_threads(), value=DEFAULT_THREAD_NAME)
-            save_thread_btn = gr.Button("💾 Save Settings as Thread")
-            delete_thread_btn = gr.Button("🗑️ Delete Selected Thread")
+            thread_selector = gr.Dropdown(label="Select Thread")
+            with gr.Column(scale=0.5):
+                save_thread_btn = gr.Button("💾 Save as NEW Thread")
+                update_thread_btn = gr.Button("🔁 Update Current Thread")
+            delete_thread_btn = gr.Button("🗑️ Delete Current Thread")
 
-    thread_name_input = gr.Textbox(label="Thread Name (on Save)", placeholder="Enter new thread name", visible=False)
-
+    thread_name_input = gr.Textbox(label="New Thread Name", placeholder="Enter new thread name", visible=False)
+    
     generate_btn = gr.Button("Generate Image")
     output_image = gr.Image(label="Generated Image")
     output_text = gr.Textbox(label="Status", interactive=False)
@@ -201,6 +231,7 @@ with gr.Blocks() as image_gen:
         width_input, height_input, filename_prefix_input, save_location_input
     ]
 
+    # Interactions
     generate_btn.click(fn=generate_image, inputs=inputs_list, outputs=[output_image, output_text])
     prompt_input.submit(fn=generate_image, inputs=inputs_list, outputs=[output_image, output_text])
 
@@ -208,6 +239,18 @@ with gr.Blocks() as image_gen:
     thread_name_input.submit(
         fn=handle_save_thread,
         inputs=[thread_name_input] + inputs_list,
+        outputs=[thread_selector, output_text, thread_name_input]
+    )
+
+    update_thread_btn.click(
+        fn=handle_update_thread,
+        inputs=[thread_selector] + inputs_list,
+        outputs=output_text
+    )
+
+    delete_thread_btn.click(
+        fn=handle_delete_thread,
+        inputs=thread_selector,
         outputs=[thread_selector, output_text]
     )
 
@@ -217,10 +260,8 @@ with gr.Blocks() as image_gen:
         outputs=inputs_list
     )
 
-    delete_thread_btn.click(
-        fn=handle_delete_thread,
-        inputs=thread_selector,
-        outputs=[thread_selector, output_text]
-    )
+    # Automatically load threads when app launches
+    image_gen.load(fn=load_threads, inputs=None, outputs=thread_selector)
+
 
 image_gen.launch()
