@@ -175,7 +175,7 @@ with gr.Blocks() as image_gen:
     prompt_input = gr.Textbox(label="Prompt", lines=1, placeholder=f"e.g. {DEFAULT_PROMPT}")
 
     with gr.Accordion("Advanced Settings", open=False):
-        neg_prompt_input = gr.Textbox(label="Negative Prompt (optional)", lines=1, value=DIG_PICTURE_NEG_PROMPT)
+        neg_prompt_input = gr.Textbox(label="Negative Prompt", lines=1, value=DIG_PICTURE_NEG_PROMPT)
         with gr.Row():
             guidance_input = gr.Number(label="Guidance Scale [1 - 20]", minimum=1.0, maximum=20.0, value=DIG_PICTURE_GUIDANCE_SCALE)
             steps_input = gr.Number(label="Inference Steps [20 - 100]", minimum=20, maximum=100, value=DIG_PICTURE_NUM_INFERENCE_STEPS)
