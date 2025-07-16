@@ -79,12 +79,7 @@ fi
 
 
 if [ "$PIP_INSTALL" == True ];then
-        #if echo "$VIRTUAL_ENV_PROMPT"|grep -q '.venv' ];then
-        #        echo "✅ Sourced"
-        #else
-                source ./.venv/bin/activate
-        #fi
-
+        source ./.venv/bin/activate
 
         if echo "$APT_LIST"|grep -q portaudio19-dev;then
                 echo "✅ Installed... portaudio19-dev"
@@ -101,8 +96,9 @@ if [ "$PIP_INSTALL" == True ];then
         fi
         
 #### Audio/Voice
-	#pip install pyaudio  ## Legacy
-        #pip install pyttsx3  ## builtin voice
+	#pip install SpeechRecognition ## Legacy
+        #pip install pyaudio  ## Legacy
+        #pip install pyttsx3  ## builtin voice ## Legacy
         pip install sounddevice scipy faster-whisper
         pip install gTTS
 	
@@ -131,13 +127,8 @@ fi
 
 
 
-
 #### Run the Box
-#if echo "$VIRTUAL_ENV_PROMPT"|grep -q '.venv' ];then
-#                echo "✅ Sourced"
-#        else
-                source ./.venv/bin/activate
-#fi	
+        source ./.venv/bin/activate	
 #### Export Variables
         export PYTHONWARNINGS="ignore"
 #### Run the AI

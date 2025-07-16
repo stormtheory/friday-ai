@@ -80,11 +80,7 @@ fi
 
 
 if [ "$PIP_INSTALL" == True ];then
-        #if echo "$VIRTUAL_ENV_PROMPT"|grep -q '.venv' ];then
-        #        echo "✅ Sourced"
-        #else
-                source ./.venv/bin/activate
-        #fi
+    source ./.venv/bin/activate
 
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)
@@ -110,6 +106,7 @@ fi
 
 #### Run the Box
 	source ./.venv/bin/activate
+#### Export Variables
 	export PYTHONWARNINGS="ignore"
 	export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 #### Run the AI
