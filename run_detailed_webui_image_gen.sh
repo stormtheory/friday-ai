@@ -9,18 +9,32 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
+# No running as root!
+ID=$(id -u)
+if [ "$ID" == '0'  ];then
+        echo "Not safe to run as root... exiting..."
+        exit
+fi
+
 if [ ! -d ./.venv ];then
 #### Build the Env Box
 	APT_LIST=$(apt list 2>/dev/null)
-        if echo "$APT_LIST"|grep -q python3.12-venv;then
-		echo "✅ Installed..."
+        if echo "$APT_LIST"|grep -q python3.12-dev;then
+                echo "✅ Installed... python3.12-dev"
+        else
+                echo "⚠️ Installing python3.12-dev"
+                sudo apt install python3.12-dev
+        fi
+
+	if echo "$APT_LIST"|grep -q python3.12-venv;then
+		echo "✅ Installed... python3.12-venv"
 	else
 		echo "⚠️ Installing python3.12-venv"
 		sudo apt install python3.12-venv
 	fi
-	
+
 	if echo "$APT_LIST"|grep -q portaudio19-dev;then
-		echo "✅ Installed..."
+		echo "✅ Installed... portaudio19-dev"
 	else
 	read -p "⚠️ Install portaudio19-dev for audio? [y] > " ANS
 		if [ "$ANS" == y ];then
@@ -29,15 +43,20 @@ if [ ! -d ./.venv ];then
 	fi
 
 	if echo "$APT_LIST"|grep -q nvidia-driver;then
+		echo "✅ Installed... nvidia-driver"
 		if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
-                	echo "✅ Installed..."
+                	echo "✅ Installed... nvidia-cuda-toolkit"
         	else
         		read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
                 	if [ "$ANS" == y ];then
                         	sudo apt install nvidia-cuda-toolkit
                 	fi
 		fi
+	else
+		echo "⚠️  nvidia-driver not installed!... exiting..."
+		exit
         fi	
+
 	
 	# 1. Create a virtual environment
 		python3 -m venv ./.venv
@@ -48,15 +67,6 @@ if [ ! -d ./.venv ];then
 	# 3. Update
 		pip install --upgrade pip
 
-#### Audio/Voice
-	pip install pyttsx3
-
-#### Voice
-	if echo "$APT_LIST"|grep -q portaudio19-dev;then
-		pip install SpeechRecognition pyaudio
-		pip install gTTS
-	fi
-	
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)
 	pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
@@ -72,16 +82,9 @@ if [ ! -d ./.venv ];then
 	pip install bitsandbytes
 	pip install git+https://github.com/huggingface/huggingface_hub.git
 
-#### webui
-	pip install gradio  # WebGUI
-	pip install pymupdf # PDF
-
-#### Indexing / RAG
-	pip install sentence_transformers
-	pip install langchain
-	pip install sentence_transformers
-
-	pip install faiss-cpu
+	# WebUI
+	pip install gradio
+	#pip install faiss-cpu
 	#pip install faiss-gpu
 fi
 
