@@ -3,6 +3,7 @@
 
 # Private data files and directories
 data/
+config.py
 
 # Vector store directory
 vector_store/
