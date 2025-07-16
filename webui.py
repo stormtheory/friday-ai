@@ -34,8 +34,8 @@ load_context()
 speech_state = enabled_speech_default()
 
 #######################################################################################
-available_models = ["mistral", "llama3"]
-current_model = gr.State("mistral")  # default model
+available_models = [DEFAULT_LLM_MODEL, "mistral-ollama", "mistral", "llama3"]
+current_model = gr.State(DEFAULT_LLM_MODEL)  # default model
 
 
 def handle_input(user_input, chatbox_display_history, selected_model):

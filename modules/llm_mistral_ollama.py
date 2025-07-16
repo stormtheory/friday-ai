@@ -13,7 +13,7 @@ from config import ASSISTANT_PROMPT_NAME, MISTRAL_PRE_PROMPT
 
 OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
 MAX_TOKENS = 200
-MAX_TOKENS = 32,768
+MAX_TOKENS = 32768
 TIMEOUT = 60  # seconds
 
 def build_prompt(user_input: str, thread=None) -> str:
