@@ -19,7 +19,7 @@ def query_llama3(user_input: str) -> str:
         prompt = f"{LLAMA3_PRE_PROMPT}\n\n"
 
         # User input
-        prompt += f"My current quetion or statement\nUser: {user_input}\n{ASSISTANT_PROMPT_NAME}:\n\n"
+        prompt += f"My current question or statement\nUser: {user_input}\n{ASSISTANT_PROMPT_NAME}:\n\n"
 
         # Chat context
         context = get_context(thread)
