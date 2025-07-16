@@ -57,5 +57,8 @@ echo "Almost done..."
 sleep 3
 echo "Install the LLM package"
 ollama pull llama3
+ollama run mistral:instruct
+
 echo "Test the new born LLM"
-ollama run llama3 "Write a Python function to print Hello World."
+ollama run llama3 "Who are you and where were you made?"
+ollama run mistral:instruct "Who are you and where were you made?"
