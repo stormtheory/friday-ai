@@ -9,6 +9,8 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
+RUN='.run_webui_installed'
+
 # No running as root!
 ID=$(id -u)
 if [ "$ID" == '0'  ];then
@@ -16,10 +18,24 @@ if [ "$ID" == '0'  ];then
         exit
 fi
 
-
 if [ ! -d ./.venv ];then
-### Checking dependencies
         APT_LIST=$(apt list 2>/dev/null)
+        ENV_INSTALL=True
+        PIP_INSTALL=True
+elif [ ! -f ./.venv/.$RUN ];then
+        APT_LIST=$(apt list 2>/dev/null)
+        ENV_INSTALL=False
+        PIP_INSTALL=True
+elif [ -f ./.venv/.$RUN ];then
+        ENV_INSTALL=False
+        PIP_INSTALL=False
+else
+        exit
+fi
+
+if [ "$ENV_INSTALL" == 'True' ];then
+### Checking dependencies
+        
         if echo "$APT_LIST"|grep -q python3.12-dev;then
                 echo "✅ Installed... python3.12-dev"
         else
@@ -32,15 +48,6 @@ if [ ! -d ./.venv ];then
         else
                 echo "⚠️ Installing python3.12-venv"
                 sudo apt install python3.12-venv
-        fi
-
-        if echo "$APT_LIST"|grep -q portaudio19-dev;then
-                echo "✅ Installed... portaudio19-dev"
-        else
-        read -p "⚠️ Install portaudio19-dev for audio? [y] > " ANS
-                if [ "$ANS" == y ];then
-                        sudo apt install portaudio19-dev
-                fi
         fi
 
         if echo "$APT_LIST"|grep -q nvidia-driver;then
@@ -67,15 +74,37 @@ if [ ! -d ./.venv ];then
 
 	# 3. Update
 		pip install --upgrade pip
+fi
 
+
+
+if [ "$PIP_INSTALL" == True ];then
+        #if echo "$VIRTUAL_ENV_PROMPT"|grep -q '.venv' ];then
+        #        echo "✅ Sourced"
+        #else
+                source ./.venv/bin/activate
+        #fi
+
+
+        if echo "$APT_LIST"|grep -q portaudio19-dev;then
+                echo "✅ Installed... portaudio19-dev"
+        else
+                echo "⚠️ Install portaudio19-dev for audio"
+                sudo apt install portaudio19-dev
+        fi
+
+        if echo "$APT_LIST"|grep -q ffmpeg;then
+                echo "✅ Installed... ffmpeg"
+        else
+                echo "⚠️ Install ffmpeg for audio playback"
+                sudo apt install ffmpeg
+        fi
+        
 #### Audio/Voice
-	pip install pyttsx3
-
-#### Voice
-	if echo "$APT_LIST"|grep -q portaudio19-dev;then
-		pip install SpeechRecognition pyaudio
-		pip install gTTS
-	fi
+	#pip install pyaudio  ## Legacy
+        #pip install pyttsx3  ## builtin voice
+        pip install sounddevice scipy faster-whisper
+        pip install gTTS
 	
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)
@@ -96,11 +125,21 @@ if [ ! -d ./.venv ];then
 	pip install sentence_transformers
 	pip install faiss-cpu
 	#pip install faiss-gpu
+
+touch .venv/$RUN
 fi
 
+
+
+
 #### Run the Box
-	source ./.venv/bin/activate
-	export PYTHONWARNINGS="ignore"
+#if echo "$VIRTUAL_ENV_PROMPT"|grep -q '.venv' ];then
+#                echo "✅ Sourced"
+#        else
+                source ./.venv/bin/activate
+#fi	
+#### Export Variables
+        export PYTHONWARNINGS="ignore"
 #### Run the AI
 	echo "Starting the AI"
 	python -m webui
