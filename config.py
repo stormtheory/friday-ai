@@ -1,6 +1,8 @@
 # Written by StormTheory
 # https://github.com/stormtheory/friday-ai
 
+from pathlib import Path
+
 ENABLE_SPEECH_INPUT = False
 ENABLE_SPEECH_OUTPUT = False
 
@@ -41,17 +43,17 @@ DIG_PICTURE_NUM_INFERENCE_STEPS = 25   # [20 to 100] Number of denoising steps t
 ### Image Save locations
 DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
 IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
-DIG_WEBUI_THREAD_DATA_DIR = "data/detail_image_gen"
+DIG_WEBUI_THREAD_DATA_DIR = str(Path.home() / ".friday_ai_data" / "detail_image_gen")
 
 ### Global Memory
-MEMORY_FILE = "data/memory.json"
+MEMORY_FILE = str(Path.home() / ".friday_ai_data" / "memory.json")
 
 ### Threads - This is for chatbox display
-THREADS_DIR = "data/chatbox_display_threads"
-ACTIVE_FILE = "data/active_thread.json"
+THREADS_DIR = str(Path.home() / ".friday_ai_data" / "chatbox_display_threads")
+ACTIVE_FILE = str(Path.home() / ".friday_ai_data" / "active_thread.json")
 
 ### Context
-CONTEXT_DIR = "data/context"
+CONTEXT_DIR = str(Path.home() / ".friday_ai_data" / "context")
 MAX_HISTORY = 10
 
 

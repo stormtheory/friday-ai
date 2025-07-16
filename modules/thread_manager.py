@@ -4,23 +4,33 @@
 # modules/thread_manager.py
 import os
 import json
-from config import THREADS_DIR, ACTIVE_FILE, CONTEXT_DIR
-
+import shutil
+from config import THREADS_DIR, ACTIVE_FILE, CONTEXT_DIR, DEFAULT_LLM_MODEL
 
 os.makedirs(THREADS_DIR, exist_ok=True)
 
+########################################
+# 🧵 Thread Listing, Creation, Deletion
+########################################
+
 def list_threads():
-    return [f.replace(".json", "") for f in os.listdir(THREADS_DIR) if f.endswith(".json")]
+    return [
+        f.replace(".json", "")
+        for f in os.listdir(THREADS_DIR)
+        if f.endswith(".json")
+    ]
 
 def create_thread(name):
     os.makedirs(THREADS_DIR, exist_ok=True)
     path = os.path.join(THREADS_DIR, f"{name}.json")
     if not os.path.exists(path):
         with open(path, "w") as f:
-            json.dump([["", f"This is a new thread called '{name}'. Start chatting below."]], f)
+            json.dump({
+                "model": DEFAULT_LLM_MODEL,
+                "history": [["", f"This is a new thread called '{name}'. Start chatting below."]]
+            }, f, indent=2)
 
 def delete_thread(name):
-    import shutil
     # Delete chat history JSON
     path = os.path.join(THREADS_DIR, f"{name}.json")
     if os.path.exists(path):
@@ -33,24 +43,20 @@ def delete_thread(name):
 
     # 🧹 Delete summary file
     summary_path = os.path.join(CONTEXT_DIR, "summaries", f"{name}.json")
-    if os.path.exists(summary_path):
-        os.remove(summary_path)
+    for p in [context_path, summary_path]:
+        if os.path.exists(p):
+            os.remove(p)
 
-    # Delete vector index and metadata files
-    index_path = f"vector_store/{name}.index"
-    meta_path = f"vector_store/{name}_meta.pkl"
+    # Delete vector index and metadata
+    for ext in [".index", "_meta.pkl"]:
+        p = os.path.join("vector_store", f"{name}{ext}")
+        if os.path.exists(p):
+            os.remove(p)
 
-    if os.path.exists(index_path):
-        os.remove(index_path)
-
-    if os.path.exists(meta_path):
-        os.remove(meta_path)
-
-    # Optionally: Delete uploaded original files folder for the thread
+    # Delete uploaded files
     uploads_dir = os.path.join("uploads", name)
-    if os.path.exists(uploads_dir) and os.path.isdir(uploads_dir):
+    if os.path.exists(uploads_dir):
         shutil.rmtree(uploads_dir)
-
 
 def switch_thread(name):
     with open(ACTIVE_FILE, "w") as f:
@@ -73,7 +79,7 @@ def get_active_thread():
         data = json.load(f)
         active = data.get("active")
 
-    if not active or active is None:
+    if not active:
         threads = list_threads()
         if threads:
             switch_thread(threads[0])
@@ -85,51 +91,92 @@ def get_active_thread():
             return default_thread
 
     return active
-    
+
+########################################
+# 💬 Chat History (Preserves model)
+########################################
+
 def get_thread_history(thread):
     path = os.path.join(THREADS_DIR, f"{thread}.json")
-
     if not os.path.exists(path):
         return []
 
     try:
         with open(path, "r") as f:
-            history = json.load(f)
-            # ✅ Ensure correct format for Gradio Chatbot: list of [user, bot]
-            if all(isinstance(pair, list) and len(pair) == 2 for pair in history):
-                return history
-            else:
-                print(f"⚠️ Invalid chat format in {path}, resetting.")
-                return []
+            data = json.load(f)
+
+            # Legacy list format
+            if isinstance(data, list):
+                return data
+
+            # Modern dict format
+            if isinstance(data, dict) and "history" in data:
+                return data["history"]
+
     except Exception as e:
-        print(f"❌ Failed to load chat history: {e}")
-        return []    
-
-
-#def get_thread_history(name):
-#    path = os.path.join(config.THREADS_DIR, f"{name}.json")
-#    try:
-#        with open(path) as f:
-#            return json.load(f)
-#    except:
-#        return []
+        print(f"❌ Failed to load chat history for {thread}: {e}")
+    return []
 
 def save_thread_history(thread_name, chat_history):
-    folder = THREADS_DIR
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-    filepath = os.path.join(folder, f"{thread_name}.json")
-
-    print(f"Saving chatbox history to: {filepath}")
-    print(f"Chatbox history length: {len(chat_history)}")
-
+    filepath = os.path.join(THREADS_DIR, f"{thread_name}.json")
     try:
+        # Always persist both model + history
+        model = get_thread_model(thread_name)
         with open(filepath, "w") as f:
-            json.dump(chat_history, f, indent=2)
-        print("Chatbox save successful!")
+            json.dump({
+                "model": model,
+                "history": chat_history
+            }, f, indent=2)
+        print(f"✅ Saved chat history for thread '{thread_name}'")
     except Exception as e:
-        print(f"Error saving chat history: {e}")
+        print(f"❌ Error saving chat history: {e}")
 
+########################################
+# ⚙️ Model Save / Load Per Thread
+########################################
 
+def get_thread_model(thread_name):
+    path = os.path.join(THREADS_DIR, f"{thread_name}.json")
+    if os.path.exists(path):
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data.get("model", DEFAULT_LLM_MODEL)
+        except Exception as e:
+            print(f"⚠️ Failed to read model for thread {thread_name}: {e}")
+    return DEFAULT_LLM_MODEL
 
+def set_thread_model(thread_name, model_name):
+    path = os.path.join(THREADS_DIR, f"{thread_name}.json")
+    try:
+        # Load existing thread data (legacy or new)
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                data = json.load(f)
+
+            # Handle legacy format (just chat list)
+            if isinstance(data, list):
+                data = {
+                    "model": model_name,
+                    "history": data
+                }
+            else:
+                data["model"] = model_name  # 🔄 Overwrite model
+
+            # Save updated thread
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
+
+        else:
+            # Thread doesn't exist — create a new one with model only
+            with open(path, "w") as f:
+                json.dump({
+                    "model": model_name,
+                    "history": []
+                }, f, indent=2)
+
+        print(f"✅ Model '{model_name}' saved for thread '{thread_name}'")
+
+    except Exception as e:
+        print(f"❌ Failed to set model for thread {thread_name}: {e}")
