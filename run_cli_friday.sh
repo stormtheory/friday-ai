@@ -93,12 +93,23 @@ fi
 if [ "$PIP_INSTALL" == True ];then
         source ./.venv/bin/activate
 
+        if echo "$APT_LIST"|grep -q festival;then
+                echo "✅ Installed... festival"
+        else
+        read -p "⚠️ Install festival for private voice playback? [y] > " ANS
+                if [ "$ANS" == y ];then
+                        sudo install festival
+                fi
+        fi
+
 #### Audio/Voice
 	#pip install SpeechRecognition ## Legacy
         #pip install pyaudio  ## Legacy
-        #pip install pyttsx3  ## builtin voice ## Legacy
-        pip install sounddevice scipy faster-whisper
-        pip install gTTS
+        #pip install pyttsx3  ## builtin voice ## Robotic
+        pip install sounddevice scipy faster-whisper ## For SpeechRecognation
+        #pip install gTTS # Not private from Google
+        #pip install edge-tts # Not private from Google
+
 	
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)

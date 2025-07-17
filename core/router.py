@@ -7,7 +7,7 @@ from config import ASSISTANT_PROMPT_NAME,DEFAULT_LLM_MODEL
 from modules import coder, system_tasks, info, memory, image_gen
 from modules.voice import stop_audio
 from utils.fuzzy import match_command
-from modules.speech_state import speech_state
+from modules.speech_state import SpeechState
 import time
 
 IMAGE_KEYWORDS = [
@@ -29,9 +29,12 @@ def handle_input(user_input, model_name=DEFAULT_LLM_MODEL):
     global speech_state
     if user_input.lower() in ["enable speech", "unmute", "speech on"]:
         speech_state = True
+        SpeechState.set(True)   # or False
+
         return "🔈 Speech enabled."
     elif user_input.lower() in ["disable speech", "mute", "speech off"]:
-        speech_state = True
+        speech_state = False
+        SpeechState.set(False)
         stop_audio()
         return "🔇 Speech disabled."
 

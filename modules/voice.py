@@ -12,7 +12,7 @@ import subprocess
 from gtts import gTTS
 from datetime import datetime
 from config import ENABLE_SPEECH_OUTPUT
-from modules.speech_state import speech_state
+from modules.speech_state import SpeechState
 from faster_whisper import WhisperModel
 
 # Environment & warnings
@@ -28,7 +28,7 @@ _audio_proc = None  # Global reference to current audio process
 _whisper_model = WhisperModel("base", compute_type="int8")  # Preload whisper model for speed
 
 def is_speech_enabled():
-    return speech_state
+    return SpeechState.get()
 
 def enabled_speech_default():
     return ENABLE_SPEECH_OUTPUT
@@ -57,35 +57,62 @@ def listen(duration=5, samplerate=16000):
     except Exception as e:
         return f"❌ Error recording/transcribing: {e}"
 
-def speak(text, lang="en"):
-    """
-    Uses gTTS to synthesize speech and ffplay to play it in a subprocess.
-    Automatically removes temp file after playback.
-    """
-    global _audio_proc
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"/tmp/friday_{timestamp}.mp3"
-
+def speak2(text: str) -> None:
     print("🔈 Generating voice response...")
     try:
-        tts = gTTS(text=text, lang=lang)
-        tts.save(filename)
-
-        _audio_proc = subprocess.Popen(
-            ["ffplay", "-nodisp", "-autoexit", filename],
-            stdout=subprocess.DEVNULL,
+        """
+        Convert text to speech using Festival TTS via subprocess.
+        This runs Festival locally, ensuring privacy (no data sent externally).
+        
+        Args:
+            text (str): The text to be spoken.
+        """
+        # Festival expects input from stdin, so we pass the text directly
+        process = subprocess.Popen(
+            ['festival', '--tts'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,  # suppress output
             stderr=subprocess.DEVNULL
         )
-        _audio_proc.wait()
-        _audio_proc = None
+        
+        # Send the text encoded as bytes, then close stdin to signal EOF
+        process.communicate(input=text.encode('utf-8'))
+    except:
+        print('❌ Error - Speech from text failed...')
 
-    except FileNotFoundError:
-        print("❌ Error: 'ffplay' not found. Install with: sudo apt install ffmpeg")
-    except Exception as e:
-        print(f"❌ Failed to play audio: {e}")
-    finally:
-        if os.path.exists(filename):
-            os.remove(filename)
+
+import tempfile
+
+_audio_proc = None  # global playback process handle
+
+def speak(text: str) -> str:
+    """
+    Synthesizes speech using Festival's text2wave and plays it using ffplay.
+    This setup allows stopping the audio at any time.
+    """
+    global _audio_proc
+    print("🔈 Generating voice response...")
+    # Create a temporary WAV file
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_wav:
+        wav_path = tmp_wav.name
+
+    # Generate the WAV using Festival
+    subprocess.run(
+        ['text2wave', '-o', wav_path],
+        input=text.encode('utf-8'),
+        check=True
+    )
+
+    # Play the WAV using ffplay (or swap for your preferred player)
+    _audio_proc = subprocess.Popen(
+        ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'quiet', wav_path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+
+    return "🗣️ Speaking..."
+
+
 
 def stop_audio():
     """
@@ -97,3 +124,15 @@ def stop_audio():
         _audio_proc = None
         return "🛑 Audio stopped."
     return "⚠️ No audio currently playing."
+
+def stop_audio2():
+    """
+    Attempts to stop all running Festival processes using pkill.
+    Use with caution: this will kill *all* festival instances for this user.
+    """
+    try:
+        # Quietly attempt to kill festival
+        subprocess.run(['pkill', '-u', os.getlogin(), 'festival'], check=False)
+        return "🛑 Festival process(es) stopped."
+    except Exception as e:
+        return f"⚠️ Could not stop Festival: {e}"
