@@ -12,7 +12,7 @@ import subprocess
 from gtts import gTTS
 from datetime import datetime
 from config import ENABLE_SPEECH_OUTPUT
-from modules.speech_state import speech_state
+from modules.speech_state import SpeechState
 from faster_whisper import WhisperModel
 
 # Environment & warnings
@@ -28,7 +28,7 @@ _audio_proc = None  # Global reference to current audio process
 _whisper_model = WhisperModel("base", compute_type="int8")  # Preload whisper model for speed
 
 def is_speech_enabled():
-    return speech_state
+    return SpeechState.get()
 
 def enabled_speech_default():
     return ENABLE_SPEECH_OUTPUT

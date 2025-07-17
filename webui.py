@@ -11,7 +11,7 @@ from modules.context import add,load_context
 
 import gradio as gr
 from modules.voice import enabled_speech_default,is_speech_enabled,stop_audio
-from modules.speech_state import speech_state
+from modules.speech_state import SpeechState
 from modules.voice import speak  # Your gTTS or pyttsx3 wrapper
 from modules.thread_manager import set_thread_model, get_thread_model
 from modules.thread_manager import get_active_thread, get_thread_history, save_thread_history, list_threads, switch_thread, create_thread, delete_thread
@@ -24,9 +24,11 @@ from datetime import datetime
 import threading
 from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL,DEFAULT_LLM_MODEL
 
-if speech_state:
-    print("Speech is ON")
+if SpeechState.get():
+    # speech is on
+    print("Speech is On")
 else:
+    # speech is off
     print("Speech is OFF")
 
 
@@ -245,19 +247,36 @@ def ensure_default_thread():
 
 
 #################################################################################
+import tempfile
+import scipy.io.wavfile as wav
+from faster_whisper import WhisperModel
+# Load the Whisper model once (can be moved to global scope if preferred)
+whisper_model = WhisperModel("base", compute_type="int8")
 
 def handle_audio(audio_path, chatbox_display_history):
     if audio_path is None:
         return "", chatbox_display_history
-    import speech_recognition as sr
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_path) as source:
-        audio = recognizer.record(source)
+
+    # Convert audio path to waveform
     try:
-        transcript = recognizer.recognize_google(audio)
-    except Exception:
-        transcript = "⚠️ Could not understand audio."
+        import torchaudio
+        waveform, sample_rate = torchaudio.load(audio_path)
+        # Save to temp WAV for compatibility
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
+            wav.write(temp_wav.name, sample_rate, waveform.squeeze(0).numpy())
+            temp_wav_path = temp_wav.name
+    except Exception as e:
+        return f"❌ Failed to process audio: {e}", chatbox_display_history
+
+    # Transcribe using faster-whisper
+    try:
+        segments, _ = whisper_model.transcribe(temp_wav_path, beam_size=5)
+        transcript = " ".join([seg.text.strip() for seg in segments])
+    except Exception as e:
+        transcript = f"⚠️ Whisper failed: {e}"
+
     return handle_input(transcript, chatbox_display_history)
+
 
 
 ############################# GUI ###################################################
@@ -287,7 +306,7 @@ with gr.Blocks() as friday_ui:
         new_thread_name = gr.Textbox(label="➕ New Thread", placeholder="e.g. trip-planning")
 
     with gr.Row():
-        chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True, show_delete_button=False)
+        chatbot = gr.Chatbot(label=f"{WEBUI_CHATBOT_LABEL}", value=get_thread_history(get_active_thread()), show_copy_button=True)
 
     with gr.Row(scale=0.5):
         text_input = gr.Textbox(placeholder="Type here...", scale=4)
@@ -300,7 +319,7 @@ with gr.Blocks() as friday_ui:
             with gr.Column(scale=0.5):
                 model_selector = gr.Dropdown(
                     choices=available_models,
-                    value=current_model,  # ✅ dynamically assigned
+                    value=get_thread_model(get_active_thread()),  # ✅ dynamically assigned
                     label="Model",
                     interactive=True
                     )
