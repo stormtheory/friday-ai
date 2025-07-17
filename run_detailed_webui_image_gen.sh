@@ -18,6 +18,64 @@ if [ "$ID" == '0'  ];then
         exit
 fi
 
+# 🛡️ Set safe defaults
+set -euo pipefail
+IFS=$'\n\t'
+
+# 🧾 Help text
+show_help() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Options:
+  -w             WebUI GUI    (Default)
+  -l             Local TK GUI
+  -d             Debug mode
+  -h             Show this help message
+
+Example:
+  $0 -vdl
+EOF
+}
+
+# 🔧 Default values
+WEBUI=true
+LOCAL_TK=false
+DEBUG=false
+
+# 🔍 Parse options
+while getopts ":wldh" opt; do
+  case ${opt} in
+    w)
+      WEBUI=true
+	  LOCAL_TK=false
+      ;;
+    l)
+      LOCAL_TK=true
+	  WEBUI=false
+      ;;
+    d)
+      DEBUG=true
+      ;;
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      echo "❌ Invalid option: -$OPTARG" >&2
+      show_help
+      exit 1
+      ;;
+    :)
+      echo "❌ Option -$OPTARG requires an argument." >&2
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+
+
 if [ ! -d ./.venv ];then
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=True
@@ -40,23 +98,23 @@ if [ "$ENV_INSTALL" == 'True' ];then
 ### Checking dependencies
 
 	APT_LIST=$(apt list 2>/dev/null)
-        if echo "$APT_LIST"|grep -q python3.12-dev;then
+        if echo "$APT_LIST"|grep python3.12-dev;then
                 echo "✅ Installed... python3.12-dev"
         else
                 echo "⚠️ Installing python3.12-dev"
                 sudo apt install python3.12-dev
         fi
 
-	if echo "$APT_LIST"|grep -q python3.12-venv;then
+	if echo "$APT_LIST"|grep python3.12-venv;then
 		echo "✅ Installed... python3.12-venv"
 	else
 		echo "⚠️ Installing python3.12-venv"
 		sudo apt install python3.12-venv
 	fi
 
-	if echo "$APT_LIST"|grep -q nvidia-driver;then
+	if echo "$APT_LIST"|grep nvidia-driver;then
 		echo "✅ Installed... nvidia-driver"
-		if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
+		if echo "$APT_LIST"|grep nvidia-cuda-toolkit;then
                 	echo "✅ Installed... nvidia-cuda-toolkit"
         	else
         		read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
@@ -109,10 +167,35 @@ fi
 
 #### Run the Box
 	source ./.venv/bin/activate
-#### Export Variables
-	export PYTHONWARNINGS="ignore"
-	export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-#### Run the AI
-	echo "Starting the Detailed_Image_Gen WebUI"
-	python -m detail_image_gen
-	exit
+
+
+if [ $WEBUI == true ]; then
+	#### Export Variables
+		export PYTHONWARNINGS="ignore"
+		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+	#### Run the AI
+		echo "Starting the Detailed Image Gen (DIG) WebUI"
+		python -m DIG-webUI
+		exit 0
+elif [ $LOCAL_TK == true ];then
+	#### Check dependancies
+		APT_LIST=$(apt list 2>/dev/null)
+		if echo "$APT_LIST"|grep python3-tk;then
+			echo "✅ Installed... python3-tk"
+		else
+			echo "⚠️ Installing python3-tk"
+			sudo apt install python3-tk
+		fi
+	#### Export Variables
+		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+	#### Run the AI
+		echo "Starting the Detailed Image Gen (DIG) Tinkter"
+		python -m DIG-tk
+		exit 0
+fi
+echo "ERROR!"
+exit 1
+
+
+
+

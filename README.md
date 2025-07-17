@@ -47,18 +47,32 @@ If there is interest in other Linux flavors/families please let me know or it's 
         # If you want to try the French Fully-Opensource LLM Mistral then:
         friday/install_mistral_from_TheBloke.sh
 
+        #######
         # Run any of the following depending on what you want to do.
-        ## Starts the webUI for the Image Generator
-        friday/run_detailed_webui_image_gen.sh
+        #######
+
+        ## Starts the webUI for the Detailed Image Generator (DIG)
+        ./run_detailed_webui_image_gen.sh -w
+        firefox http://127.0.0.1:7860
+
+        ## Starts the webUI for the Detailed Image Generator (DIG)
+        ./run_detailed_webui_image_gen.sh -l
+
         ## Starts the Command Line Interface (CLI) Version of Friday
-        friday/run_cli_friday.sh
+        ./run_cli_friday.sh
+
         ## Starts the webUI Version of Friday
-        friday/run_webui_friday.sh
+        ./run_webui_friday.sh
+        firefox http://127.0.0.1:7860
 
 # Tips/Tricks:
 All images generated are saved to your Pictures directory in your homespace un a folder called AI:
         
 	cd ~/Pictures/AI/ ; ls
+
+All saved data other then pictures are saved in ~/.friday_ai_data/ unless changed in config.py from the default.
+
+        cd ~/.friday_ai_data/   ### See your data and history.
  
  By default the webUI after ran can be found by running this command:
  	
