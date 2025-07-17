@@ -12,7 +12,7 @@ from modules.context import add,load_context
 import gradio as gr
 from modules.voice import enabled_speech_default,is_speech_enabled,stop_audio
 from modules.speech_state import SpeechState
-from modules.voice import speak  # Your gTTS or pyttsx3 wrapper
+from modules.voice import speak
 from modules.thread_manager import set_thread_model, get_thread_model
 from modules.thread_manager import get_active_thread, get_thread_history, save_thread_history, list_threads, switch_thread, create_thread, delete_thread
 from utils.file_utils import extract_text_from_json
@@ -268,12 +268,17 @@ def handle_audio(audio_path, chatbox_display_history):
     except Exception as e:
         return f"❌ Failed to process audio: {e}", chatbox_display_history
 
-    # Transcribe using faster-whisper
+    # Transcribe using faster-whisper, then clean up temp file
     try:
         segments, _ = whisper_model.transcribe(temp_wav_path, beam_size=5)
         transcript = " ".join([seg.text.strip() for seg in segments])
     except Exception as e:
         transcript = f"⚠️ Whisper failed: {e}"
+    finally:
+        # 🔐 Always clean up the temp file
+        if os.path.exists(temp_wav_path):
+            os.remove(temp_wav_path)
+
 
     return handle_input(transcript, chatbox_display_history)
 

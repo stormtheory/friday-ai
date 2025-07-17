@@ -22,7 +22,7 @@ from config import (
     CLI_FRIDAY_EXIT_MESSAGE
 )
 from modules.speech_state import SpeechState
-from modules.voice import speak  # Reuse TTS if needed
+from modules.voice import speak
 
 if SpeechState.get():
     # speech is on

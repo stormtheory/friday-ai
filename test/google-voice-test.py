@@ -12,6 +12,38 @@ import subprocess
 import os
 from datetime import datetime
 
+
+def speak2(text, lang="en"):
+    """
+    Uses gTTS to synthesize speech and ffplay to play it in a subprocess.
+    Automatically removes temp file after playback.
+    """
+    global _audio_proc
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"/tmp/friday_{timestamp}.mp3"
+
+    print("🔈 Generating voice response...")
+    try:
+        tts = gTTS(text=text, lang=lang)
+        tts.save(filename)
+
+        _audio_proc = subprocess.Popen(
+            ["ffplay", "-nodisp", "-autoexit", filename],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        _audio_proc.wait()
+        _audio_proc = None
+
+    except FileNotFoundError:
+        print("❌ Error: 'ffplay' not found. Install with: sudo apt install ffmpeg")
+    except Exception as e:
+        print(f"❌ Failed to play audio: {e}")
+    finally:
+        if os.path.exists(filename):
+            os.remove(filename)
+
+
 def speak(text, lang="en"):
     # Create unique filename using timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
