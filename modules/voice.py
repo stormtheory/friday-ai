@@ -14,6 +14,7 @@ from datetime import datetime
 from config import ENABLE_SPEECH_OUTPUT
 from modules.speech_state import SpeechState
 from faster_whisper import WhisperModel
+import tempfile
 
 # Environment & warnings
 os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -57,32 +58,7 @@ def listen(duration=5, samplerate=16000):
     except Exception as e:
         return f"❌ Error recording/transcribing: {e}"
 
-def speak2(text: str) -> None:
-    print("🔈 Generating voice response...")
-    try:
-        """
-        Convert text to speech using Festival TTS via subprocess.
-        This runs Festival locally, ensuring privacy (no data sent externally).
-        
-        Args:
-            text (str): The text to be spoken.
-        """
-        # Festival expects input from stdin, so we pass the text directly
-        process = subprocess.Popen(
-            ['festival', '--tts'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.DEVNULL,  # suppress output
-            stderr=subprocess.DEVNULL
-        )
-        
-        # Send the text encoded as bytes, then close stdin to signal EOF
-        process.communicate(input=text.encode('utf-8'))
-    except:
-        print('❌ Error - Speech from text failed...')
-
-
-import tempfile
-
+##########################################################################################################
 _audio_proc = None  # global playback process handle
 
 def speak(text: str) -> str:
@@ -111,9 +87,7 @@ def speak(text: str) -> str:
     )
 
     return "🗣️ Speaking..."
-
-
-
+##############################################################################################################
 def stop_audio():
     """
     Gracefully stops current audio playback if running.
