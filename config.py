@@ -45,6 +45,9 @@ DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
 IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
 DIG_WEBUI_THREAD_DATA_DIR = str(Path.home() / ".friday_ai_data" / "detail_image_gen")
 
+### CLI Input History
+CLI_HISTORY_FILE = str(Path.home() / ".friday_ai_data" / "cli_history")
+
 ### Global Memory
 MEMORY_FILE = str(Path.home() / ".friday_ai_data" / "memory.json")
 

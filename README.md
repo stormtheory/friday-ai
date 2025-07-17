@@ -59,6 +59,10 @@ If there is interest in other Linux flavors/families please let me know or it's 
 All images generated are saved to your Pictures directory in your homespace un a folder called AI:
         
 	cd ~/Pictures/AI/ ; ls
+
+All saved data other then pictures are saved in ~/.friday_ai_data/ unless changed in config.py from the default.
+
+        cd ~/.friday_ai_data/   ### See your data and history.
  
  By default the webUI after ran can be found by running this command:
  	

@@ -19,7 +19,8 @@ from config import (
     ASSISTANT_PROMPT_NAME,
     GREEN, RESET, BLUE, YELLOW,
     CLI_FRIDAY_WELCOME_MESSAGE,
-    CLI_FRIDAY_EXIT_MESSAGE
+    CLI_FRIDAY_EXIT_MESSAGE,
+    CLI_HISTORY_FILE
 )
 from modules.speech_state import SpeechState
 from modules.voice import speak
@@ -74,7 +75,7 @@ def get_user_input():
         return input(get_prompt())
 
 # 🧠 CLI history persistence
-histfile = os.path.expanduser("~/.friday_history")
+histfile = os.path.expanduser(CLI_HISTORY_FILE)
 if os.path.exists(histfile):
     readline.read_history_file(histfile)
 readline.parse_and_bind("tab: complete")
