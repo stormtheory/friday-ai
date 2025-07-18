@@ -7,8 +7,6 @@ Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely fr
 # In the Works:
 - As always: Fighting to keep this AI free, private, fast, and easy (in that order).
 - Updating screenshots.
-- Combining the run/install scripts.
-- Stop the pip install calls at run of an app.
 - Adding more features to the new Local Tkinter Chatbot.
 - Porting Local Tkinter DIG to customtkinter like Chatbot.
 - Making a chat bot that can tell a story while making illustrations with the image generator.
@@ -70,7 +68,7 @@ If there is interest in other Linux flavors/families please let me know or it's 
 ### run the CLI
 
         # Command Line Interface (CLI)
-        ./run_cli_friday.sh
+        ./run_chatbot.sh -c
 
 ### run the WebUI
 
