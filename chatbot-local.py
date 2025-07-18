@@ -179,15 +179,25 @@ class FridayApp(ctk.CTk):
         # Confirm deletion for safety
         confirm = messagebox.askyesno(
             title="Delete File",
-            message=f"Are you sure you want to delete '{filename}'?"
+            message=f"Are you sure you want to delete '{filename}' and its embeddings?"
         )
         if not confirm:
             return
         try:
             os.remove(file_path)
+            # Remove associated vector files
+            file_id = os.path.splitext(filename)[0]
+            vector_dir = os.path.join(f"{CONTEXT_DIR}/vector_store", self.active_thread)
+            faiss_file = os.path.join(vector_dir, f"{file_id}.index")
+            meta_file = os.path.join(vector_dir, f"{file_id}_meta.pkl")
+            if os.path.exists(faiss_file):
+                os.remove(faiss_file)
+            if os.path.exists(meta_file):
+                os.remove(meta_file)
             self.refresh_files_display()
         except Exception as e:
-            messagebox.showerror("Error", f"❌ Failed to delete file: {e}")
+            messagebox.showerror("Error", f"❌ Failed to delete file or vectors: {e}")
+
 
     def create_new_thread(self):
         new_thread_name = simpledialog.askstring("New Thread", "Enter thread name:")
@@ -307,15 +317,23 @@ class FridayApp(ctk.CTk):
         shutil.copy(file_path, dest_path)
 
         # Save vector index and metadata
-        index_path = f"{CONTEXT_DIR}/vector_store/{thread}.index"
-        meta_path = f"{CONTEXT_DIR}/vector_store/{thread}_meta.pkl"
-        os.makedirs(f"{CONTEXT_DIR}/vector_store", exist_ok=True)
+        # Use hashed file name or full file name for ID
+        file_id = os.path.splitext(os.path.basename(file_path))[0]
+
+        # Save vectors and metadata per file
+        file_vector_dir = os.path.join(f"{CONTEXT_DIR}/vector_store/{self.active_thread}")
+        os.makedirs(file_vector_dir, exist_ok=True)
+
+        faiss_file = os.path.join(file_vector_dir, f"{file_id}.index")
+        meta_file = os.path.join(file_vector_dir, f"{file_id}_meta.pkl")
 
         index = faiss.IndexFlatL2(embeddings.shape[1])
         index.add(embeddings)
-        faiss.write_index(index, index_path)
-        with open(meta_path, "wb") as f:
+        faiss.write_index(index, faiss_file)
+
+        with open(meta_file, "wb") as f:
             pickle.dump(chunks, f)
+
 
         snippet = content[:500].strip()
         if snippet:
@@ -323,16 +341,43 @@ class FridayApp(ctk.CTk):
 
         return f"📄 Uploaded and indexed `{os.path.basename(file_path)}`", None
 
+    import traceback    # <- handy for debugging; remove if you don’t want it
+
     def delete_current_thread(self):
-        # Confirm before deletion
+        thread = self.active_thread
+
+        # Single confirmation – message lists everything that will be removed
         confirm = messagebox.askyesno(
             title="Delete Thread",
-            message=f"Are you sure you want to delete the thread '{self.active_thread}'?"
+            message=(
+                f"⚠️ This will permanently delete the thread '{thread}',\n"
+                f"all chat history, uploaded files, and embeddings.\n"
+                "Do you want to continue?"
+            )
         )
         if not confirm:
-            return  # User clicked "No", cancel deletion
+            return
 
-        delete_thread(self.active_thread)
+        try:
+            # 1️⃣  Remove uploads directory (if it exists)
+            uploads_dir = os.path.join(f"{CONTEXT_DIR}/uploads", thread)
+            if os.path.exists(uploads_dir):
+                shutil.rmtree(uploads_dir)
+
+            # 2️⃣  Remove vector store directory (if it exists)
+            vector_dir = os.path.join(f"{CONTEXT_DIR}/vector_store", thread)
+            if os.path.exists(vector_dir):
+                shutil.rmtree(vector_dir)
+
+            # 3️⃣  Delete thread metadata / history (your helper)
+            delete_thread(thread)
+
+        except Exception as e:
+            traceback.print_exc()        # optional: log full trace
+            messagebox.showerror("Error", f"❌ Failed to delete thread:\n{e}")
+            return   # abort UI refresh – keep state unchanged
+
+        # 4️⃣  Pick a fallback thread (or create a fresh 'default')
         threads = list_threads()
 
         # Fallback if no threads left
