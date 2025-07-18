@@ -27,6 +27,7 @@ import pathlib
 from utils.file_utils import extract_text_from_json
 from config import DEFAULT_LLM_MODEL, CHATBOT_TITLE, ASSISTANT_PROMPT_NAME, USER_PROMPT_NAME, CONTEXT_DIR
 from core import router
+from PIL import Image, ImageTk
 
 # Load context once at app start
 load_context()
@@ -55,6 +56,14 @@ class FridayApp(ctk.CTk):
 
         self.title(CHATBOT_TITLE)
         self.geometry("960x720")
+
+    # ✅ Load PNG icon for Linux window/taskbar
+        try:
+            icon_image = Image.open("assets/chatbot_icon.png")  # Adjust path if needed
+            icon_photo = ImageTk.PhotoImage(icon_image)
+            self.iconphoto(True, icon_photo)
+        except Exception as e:
+            print(f"⚠️ Failed to load PNG icon: {e}")
 
         self.speech_enabled = enabled_speech_default()
         self.active_thread = get_active_thread()
@@ -391,8 +400,6 @@ class FridayApp(ctk.CTk):
         self.thread_selector.configure(values=threads)
         self.thread_selector.set(fallback)
         self.on_switch_thread(fallback)
-
-
 
 if __name__ == "__main__":
     app = FridayApp()

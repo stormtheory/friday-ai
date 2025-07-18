@@ -181,7 +181,7 @@ def threaded_generate():
 
     except Exception as e:
         print(f"❌ Exception: {e}")
-        root.after(0, lambda: (
+        root.after(0, lambda e=e: (
             status_var.set(f"❌ Error: {str(e)}"),
             stop_flashing(),
             generate_button.config(state=tk.NORMAL)
@@ -264,7 +264,7 @@ frame.pack(fill="x", padx=10, pady=5)
 tk.Label(frame, text="Negative Prompt").pack()
 tk.Entry(frame, textvariable=neg_prompt_var, width=80).pack()
 
-for label, var in [("Guidance Scale", guidance_scale_var), ("Steps", steps_var),
+for label, var in [("Guidance Scale [1 - 20]", guidance_scale_var), ("Steps [20 - 100]", steps_var),
                    ("Width", width_var), ("Height", height_var),
                    ("Save Subfolder", save_location_var), ("Filename Prefix", filename_prefix_var)]:
     tk.Label(frame, text=label).pack()

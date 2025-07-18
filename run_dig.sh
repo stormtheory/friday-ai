@@ -184,6 +184,7 @@ elif [ $LOCAL_TK == true ];then
 			echo "⚠️ Installing python3-tk"
 			sudo apt install python3-tk
 		fi
+		pip install pillow  # Icon
 	#### Export Variables
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 	#### Run the AI
