@@ -4,7 +4,7 @@
 import customtkinter as ctk
 from tkinter import filedialog
 import tkinter as tk
-import tkinter.simpledialog  # Needed for prompt dialog
+from tkinter import messagebox, simpledialog
 import threading
 import os
 import json
@@ -241,8 +241,19 @@ class FridayApp(ctk.CTk):
         return f"📄 Uploaded and indexed `{os.path.basename(file_path)}`", None
 
     def delete_current_thread(self):
+        # Confirm before deletion
+        confirm = messagebox.askyesno(
+            title="Delete Thread",
+            message=f"Are you sure you want to delete the thread '{self.active_thread}'?"
+        )
+
+        if not confirm:
+            return  # User clicked "No", cancel deletion
+
         delete_thread(self.active_thread)
         threads = list_threads()
+
+        # Fallback if no threads left
         if not threads:
             create_thread("default")
             switch_thread("default")
@@ -252,6 +263,7 @@ class FridayApp(ctk.CTk):
         self.thread_selector.configure(values=threads)
         self.thread_selector.set(fallback)
         self.on_switch_thread(fallback)
+
 
 
 if __name__ == "__main__":
