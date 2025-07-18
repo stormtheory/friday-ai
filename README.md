@@ -6,9 +6,17 @@ Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely fr
 
 # In the Works:
 - As always: Fighting to keep this AI free, private, fast, and easy (in that order).
+- Updating screenshots.
 - Combining the run/install scripts.
-- Adding more features to the new Local Tkinter Chatbot
+- Stop the pip install calls at run of an app.
+- Adding more features to the new Local Tkinter Chatbot.
+- Porting Local Tkinter DIG to customtkinter like Chatbot.
 - Making a chat bot that can tell a story while making illustrations with the image generator.
+- Getting a Female Voice (Running into privacy issues) Did this with gTTS but AI responses were being routed to Google and others to Microsoft.
+
+# Ultimate Goals
+- A free, private, fast, and easy inhome AI that can do tasks outside of just being a chatbot.
+- Change the temparture in the home, set calender events, hold a complex conversation, set reminders, intergrate into a smart speaker and many other features and tasks we see in AI apps now but 100% private and free.
 
 # System Requirements:
 - Ubuntu/Mint is only tested to be supported.
