@@ -47,14 +47,13 @@ def delete_thread(name):
         if os.path.exists(p):
             os.remove(p)
 
-    # Delete vector index and metadata
-    for ext in [".index", "_meta.pkl"]:
-        p = os.path.join("vector_store", f"{name}{ext}")
-        if os.path.exists(p):
-            os.remove(p)
+    # Delete all vector indexes and metadata files inside vector_store/{thread}/
+    vector_dir = os.path.join(CONTEXT_DIR, "vector_store", name)
+    if os.path.exists(vector_dir):
+        shutil.rmtree(vector_dir)
 
-    # Delete uploaded files
-    uploads_dir = os.path.join("uploads", name)
+    # Delete uploaded files inside uploads/{thread}/
+    uploads_dir = os.path.join(CONTEXT_DIR, "uploads", name)
     if os.path.exists(uploads_dir):
         shutil.rmtree(uploads_dir)
 
