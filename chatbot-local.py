@@ -2,7 +2,6 @@
 # Ported from Gradio frontend to customtkinter
 
 import customtkinter as ctk
-from tkinter import filedialog
 import threading
 import os
 import json
