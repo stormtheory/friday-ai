@@ -2,19 +2,14 @@
 # Ported from Gradio frontend to customtkinter
 
 import customtkinter as ctk
-import tkinter as tk
 from tkinter import filedialog
 import threading
 import os
 import json
 import shutil
-import tempfile
 import numpy as np
 import pickle
-from datetime import datetime
-import scipy.io.wavfile as wav
 
-import torchaudio
 from faster_whisper import WhisperModel
 from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -22,14 +17,13 @@ import faiss
 
 from modules.context import add, load_context
 from modules.voice import speak, stop_audio, enabled_speech_default
-from modules.speech_state import SpeechState
 from modules.thread_manager import (
     set_thread_model, get_thread_model,
     get_active_thread, get_thread_history, save_thread_history,
     list_threads, switch_thread, create_thread, delete_thread
 )
 from utils.file_utils import extract_text_from_json
-from config import DEFAULT_LLM_MODEL
+from config import DEFAULT_LLM_MODEL,CHATBOT_TITLE,ASSISTANT_PROMPT_NAME,USER_PROMPT_NAME
 from core import router
 
 # Load context once at app start
@@ -45,7 +39,7 @@ class FridayApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Friday - Your AI Assistant")
+        self.title(CHATBOT_TITLE)
         self.geometry("960x720")
 
         self.speech_enabled = enabled_speech_default()
@@ -92,8 +86,23 @@ class FridayApp(ctk.CTk):
 
     def refresh_chat_display(self):
         self.chatbox.delete("1.0", "end")
+        # Configure a tag for user's text with color white
+        self.chatbox.tag_config("user_text", foreground="#FFD700")
+        
+        # Configure a tag for assistant's text with color yellow
+        self.chatbox.tag_config("assistant_text", foreground="#FFFFFF")
+        
         for user, response in self.chat_history:
-            self.chatbox.insert("end", f"🧑 You: {user}\n🤖 Friday: {response}\n\n")
+            # Insert user message with 'user_text' tag for white color
+            self.chatbox.insert("end", f"🧑 {USER_PROMPT_NAME}: {user}\n", "user_text")
+            
+            # Insert assistant response with 'assistant_text' tag for yellow color
+            self.chatbox.insert("end", f"🤖 {ASSISTANT_PROMPT_NAME}: {response}\n\n", "assistant_text")
+        
+        # Scroll to the bottom so latest messages are visible
+        self.chatbox.see("end")
+
+
 
     def on_send(self):
         user_input = self.input_field.get().strip()
