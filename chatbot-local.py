@@ -2,9 +2,7 @@
 # Ported from Gradio frontend to customtkinter
 
 import customtkinter as ctk
-from tkinter import filedialog
-import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import filedialog, messagebox, simpledialog
 import threading
 import os
 import json
@@ -25,7 +23,7 @@ from modules.thread_manager import (
     list_threads, switch_thread, create_thread, delete_thread
 )
 from utils.file_utils import extract_text_from_json
-from config import DEFAULT_LLM_MODEL,CHATBOT_TITLE,ASSISTANT_PROMPT_NAME,USER_PROMPT_NAME
+from config import DEFAULT_LLM_MODEL, CHATBOT_TITLE, ASSISTANT_PROMPT_NAME, USER_PROMPT_NAME, THREADS_DIR
 from core import router
 
 # Load context once at app start
@@ -35,6 +33,18 @@ load_context()
 embed_model = SentenceTransformer("all-MiniLM-L6-v2")
 splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=400, separators=["\n\n", "\n", ".", "!", "?"])
 whisper_model = WhisperModel("base", compute_type="int8")
+
+
+def list_uploaded_files(thread_name):
+    upload_dir = os.path.join(f"{THREADS_DIR}/uploads", thread_name)
+    if not os.path.exists(upload_dir):
+        return "No files uploaded."
+    files = os.listdir(upload_dir)
+    if not files:
+        return "No files uploaded."
+    lines = [f"- {f} ({os.path.getsize(os.path.join(upload_dir, f)) / 1024:.1f} KB)"
+             for f in files]
+    return "\n".join(lines)
 
 
 class FridayApp(ctk.CTk):
@@ -65,6 +75,15 @@ class FridayApp(ctk.CTk):
         self.chatbox.pack(pady=5)
         self.refresh_chat_display()
 
+        # --- Uploaded Files Label & Viewer ---
+        self.files_label = ctk.CTkLabel(self, text="📁 Uploaded Files:", font=ctk.CTkFont(size=14, weight="bold"))
+        self.files_label.pack(pady=(10, 0))
+
+        self.files_box = ctk.CTkTextbox(self, width=850, height=80)
+        self.files_box.configure(state="disabled")
+        self.files_box.pack(pady=5)
+        # --------------------------------------
+
         self.input_field = ctk.CTkEntry(self, placeholder_text="Type your message...", width=600)
         self.input_field.pack(pady=10)
         self.input_field.bind("<Return>", self.on_enter_pressed)
@@ -75,7 +94,7 @@ class FridayApp(ctk.CTk):
 
         # Frame to hold grouped buttons horizontally and center them
         self.button_row = ctk.CTkFrame(self)
-        self.button_row.pack(pady=10, anchor="center")  # Center align the row
+        self.button_row.pack(pady=10, anchor="center")
 
         # Buttons packed side-by-side inside the row
         self.send_button = ctk.CTkButton(self.button_row, text="Send", command=self.on_send)
@@ -93,6 +112,7 @@ class FridayApp(ctk.CTk):
         self.delete_thread_btn = ctk.CTkButton(self.button_row, text="🗑️ Delete Thread", command=self.delete_current_thread)
         self.delete_thread_btn.pack(side="left", padx=5)
 
+        self.refresh_files_display()
 
     def refresh_chat_display(self):
         self.chatbox.delete("1.0", "end")
@@ -101,7 +121,7 @@ class FridayApp(ctk.CTk):
         
         # Configure a tag for assistant's text with color yellow
         self.chatbox.tag_config("assistant_text", foreground="#FFFFFF")
-        
+
         for user, response in self.chat_history:
             # Insert user message with 'user_text' tag for white color
             self.chatbox.insert("end", f"🧑 {USER_PROMPT_NAME}: {user}\n", "user_text")
@@ -112,21 +132,24 @@ class FridayApp(ctk.CTk):
         # Scroll to the bottom so latest messages are visible
         self.chatbox.see("end")
 
+    def refresh_files_display(self):
+        file_list = list_uploaded_files(self.active_thread)
+        self.files_box.configure(state="normal")
+        self.files_box.delete("1.0", "end")
+        self.files_box.insert("end", file_list)
+        self.files_box.configure(state="disabled")
+
     def create_new_thread(self):
-        # Ask user for a thread name via simple dialog
-        new_thread_name = tk.simpledialog.askstring("New Thread", "Enter thread name:")
-        
+        new_thread_name = simpledialog.askstring("New Thread", "Enter thread name:")
         if not new_thread_name:
-            return  # Cancelled or empty input
-        
+            return
         if new_thread_name in list_threads():
-            messagebox(title="Thread Exists", message="⚠️ A thread with that name already exists.")
+            messagebox.showinfo("Thread Exists", "⚠️ A thread with that name already exists.")
             return
 
         # Create the thread and switch to it
         create_thread(new_thread_name)
         switch_thread(new_thread_name)
-        
         self.active_thread = new_thread_name
         self.model = get_thread_model(new_thread_name)
         self.chat_history = []
@@ -134,9 +157,8 @@ class FridayApp(ctk.CTk):
         # Update thread selector options
         self.thread_selector.configure(values=list_threads())
         self.thread_selector.set(new_thread_name)
-        
         self.refresh_chat_display()
-
+        self.refresh_files_display()
 
     def on_send(self):
         user_input = self.input_field.get().strip()
@@ -148,9 +170,8 @@ class FridayApp(ctk.CTk):
         threading.Thread(target=self.process_input, args=(user_input,), daemon=True).start()
 
     def process_input(self, user_input):
-        self.thinking_label.configure(self, text="🤔 Thinking...", text_color="orange")  # Show "Thinking..." indicator
+        self.thinking_label.configure(text="🤔 Thinking...", text_color="orange")
         self.update_idletasks()
-
         try:
             response = router.handle_input(user_input, model_name=self.model)
         except Exception as e:
@@ -164,7 +185,7 @@ class FridayApp(ctk.CTk):
         if self.speech_enabled:
             threading.Thread(target=speak, args=(response,), daemon=True).start()
 
-        self.thinking_label.configure(self, text="Status: Idle", text_color="gray")
+        self.thinking_label.configure(text="Status: Idle", text_color="gray")
 
     def toggle_voice(self):
         self.speech_enabled = not self.speech_enabled
@@ -180,12 +201,14 @@ class FridayApp(ctk.CTk):
         self.model = get_thread_model(thread_name)
         self.chat_history = get_thread_history(thread_name) or []
         self.refresh_chat_display()
+        self.refresh_files_display()
 
     def select_and_process_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Supported", "*.txt *.pdf *.json")])
         if file_path:
             status, _ = self.handle_file(file_path)
             messagebox.showinfo(title="Upload", message=status)
+            self.refresh_files_display()
 
     def on_enter_pressed(self, event):
         self.on_send()
@@ -223,7 +246,7 @@ class FridayApp(ctk.CTk):
 
         # Store file in current thread's upload directory
         thread = self.active_thread
-        upload_dir = os.path.join("uploads", thread)
+        upload_dir = os.path.join(f"{THREADS_DIR}/uploads", thread)
         os.makedirs(upload_dir, exist_ok=True)
         dest_path = os.path.join(upload_dir, os.path.basename(file_path))
         shutil.copy(file_path, dest_path)
@@ -251,7 +274,6 @@ class FridayApp(ctk.CTk):
             title="Delete Thread",
             message=f"Are you sure you want to delete the thread '{self.active_thread}'?"
         )
-
         if not confirm:
             return  # User clicked "No", cancel deletion
 
@@ -268,7 +290,6 @@ class FridayApp(ctk.CTk):
         self.thread_selector.configure(values=threads)
         self.thread_selector.set(fallback)
         self.on_switch_thread(fallback)
-
 
 
 if __name__ == "__main__":
