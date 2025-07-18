@@ -1,4 +1,5 @@
 # Written by StormTheory
+# Ported from Gradio frontend to customtkinter
 
 import customtkinter as ctk
 import tkinter as tk
@@ -72,6 +73,10 @@ class FridayApp(ctk.CTk):
         self.input_field.pack(pady=10)
         self.input_field.bind("<Return>", self.on_enter_pressed)
 
+        # Thinking indicator label (hidden by default)
+        self.thinking_label = ctk.CTkLabel(self, text="🤔 Thinking...", text_color="gray")
+        self.thinking_label.pack(pady=5)
+        self.thinking_label.pack_forget()
 
         self.send_button = ctk.CTkButton(self, text="Send", command=self.on_send)
         self.send_button.pack(pady=5)
@@ -96,15 +101,27 @@ class FridayApp(ctk.CTk):
             return
         self.input_field.delete(0, 'end')
 
-        response = router.handle_input(user_input, model_name=self.model)
+        # Start response processing in a background thread to avoid UI freeze
+        threading.Thread(target=self.process_input, args=(user_input,), daemon=True).start()
+
+    def process_input(self, user_input):
+        self.thinking_label.pack()  # Show "Thinking..." indicator
+        self.update_idletasks()
+
+        try:
+            response = router.handle_input(user_input, model_name=self.model)
+        except Exception as e:
+            response = f"⚠️ Error: {e}"
+
         self.chat_history.append((user_input, response))
         self.refresh_chat_display()
-
         save_thread_history(self.active_thread, self.chat_history)
         set_thread_model(self.active_thread, self.model)
 
         if self.speech_enabled:
             threading.Thread(target=speak, args=(response,), daemon=True).start()
+
+        self.thinking_label.pack_forget()  # Hide "Thinking..." indicator
 
     def toggle_voice(self):
         self.speech_enabled = not self.speech_enabled
@@ -126,7 +143,7 @@ class FridayApp(ctk.CTk):
         if file_path:
             status, _ = self.handle_file(file_path)
             ctk.CTkMessagebox(title="Upload", message=status)
-    
+
     def on_enter_pressed(self, event):
         self.on_send()
 
@@ -151,6 +168,7 @@ class FridayApp(ctk.CTk):
         except Exception as e:
             return f"❌ Error reading file: {e}", None
 
+        # Text chunking
         chunks = splitter.split_text(content)
         if not chunks:
             return "❌ No valid text chunks extracted.", None
@@ -160,12 +178,14 @@ class FridayApp(ctk.CTk):
         if embeddings.ndim != 2 or embeddings.shape[0] == 0:
             return "❌ Invalid embeddings generated.", None
 
+        # Store file in current thread's upload directory
         thread = self.active_thread
         upload_dir = os.path.join("uploads", thread)
         os.makedirs(upload_dir, exist_ok=True)
         dest_path = os.path.join(upload_dir, os.path.basename(file_path))
         shutil.copy(file_path, dest_path)
 
+        # Save vector index and metadata
         index_path = f"vector_store/{thread}.index"
         meta_path = f"vector_store/{thread}_meta.pkl"
         os.makedirs("vector_store", exist_ok=True)
