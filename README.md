@@ -5,7 +5,10 @@ F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under t
 Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home — no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
 
 # In the Works:
-Local API to GPT4 to allow for more tokens and more work to get done faster. UI enhancements and adding stable-diffusion-xl-base-1.0 as an option from the main webUI. More stored documents and better referancing using the local API calls.
+- As always: Fighting to keep this AI free, private, fast, and easy (in that order).
+- Combining the run/install scripts.
+- Adding more features to the new Local Tkinter Chatbot
+- Making a chat bot that can tell a story while making illustrations with the image generator.
 
 # System Requirements:
 - Ubuntu/Mint is only tested to be supported.
@@ -47,22 +50,28 @@ If there is interest in other Linux flavors/families please let me know or it's 
         # If you want to try the French Fully-Opensource LLM Mistral then:
         friday/install_mistral_from_TheBloke.sh
 
-        #######
-        # Run any of the following depending on what you want to do.
-        #######
+# RUN:
+### run the local Windowed App
 
-        ## Starts the webUI for the Detailed Image Generator (DIG)
-        ./run_detailed_webui_image_gen.sh -w
-        firefox http://127.0.0.1:7860
+        # Detailed Image Generator (DIG)
+        ./run_dig.sh -l
 
-        ## Starts the webUI for the Detailed Image Generator (DIG)
-        ./run_detailed_webui_image_gen.sh -l
+        # Chatbot
+        ./run_chatbot.sh -l
 
-        ## Starts the Command Line Interface (CLI) Version of Friday
+### run the CLI
+
+        # Command Line Interface (CLI)
         ./run_cli_friday.sh
 
-        ## Starts the webUI Version of Friday
-        ./run_webui_friday.sh
+### run the WebUI
+
+        # Detailed Image Generator (DIG)
+        ./run_dig.sh -w
+        firefox http://127.0.0.1:7860
+
+        # Chatbot
+        ./run_chatbot.sh -w
         firefox http://127.0.0.1:7860
 
 # Tips/Tricks:

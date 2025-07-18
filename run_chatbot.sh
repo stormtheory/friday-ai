@@ -18,6 +18,64 @@ if [ "$ID" == '0'  ];then
         exit
 fi
 
+# 🛡️ Set safe defaults
+set -euo pipefail
+IFS=$'\n\t'
+
+# 🧾 Help text
+show_help() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Options:
+  -w             WebUI GUI
+  -l             Local TK GUI (Default)
+  -c             Command Line Interface (CLI)
+  -d             Debug mode
+  -h             Show this help message
+
+Example:
+  $0 -vdl
+EOF
+}
+
+# 🔧 Default values
+WEBUI=false
+LOCAL_TK=true
+DEBUG=false
+
+# 🔍 Parse options
+while getopts ":wldh" opt; do
+  case ${opt} in
+    w)
+      WEBUI=true
+	  LOCAL_TK=false
+      ;;
+    l)
+      LOCAL_TK=true
+	  WEBUI=false
+      ;;
+    d)
+      DEBUG=true
+      ;;
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      echo "❌ Invalid option: -$OPTARG" >&2
+      show_help
+      exit 1
+      ;;
+    :)
+      echo "❌ Option -$OPTARG requires an argument." >&2
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+
 if [ ! -d ./.venv ];then
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=True
@@ -125,8 +183,6 @@ if [ "$PIP_INSTALL" == True ];then
 	pip install diffusers transformers accelerate safetensors
 	pip install xformers
 
-#### webui
-	pip install gradio  # WebGUI
 	pip install pymupdf # PDF
 
 #### Indexing / RAG
@@ -142,10 +198,32 @@ fi
 
 
 #### Run the Box
-        source ./.venv/bin/activate	
-#### Export Variables
-        export PYTHONWARNINGS="ignore"
-#### Run the AI
-	echo "Starting the AI"
-	python -m webui
-	exit
+        source ./.venv/bin/activate
+
+if [ $WEBUI == true ]; then
+                pip install gradio  # WebGUI	
+        #### Export Variables
+                export PYTHONWARNINGS="ignore"
+        #### Run the AI
+                echo "Starting the AI"
+                python -m chatbot-webui
+                exit 0
+elif [ $LOCAL_TK == true ];then
+	#### Check dependancies
+		APT_LIST=$(apt list 2>/dev/null)
+		if echo "$APT_LIST"|grep python3-tk;then
+			echo "✅ Installed... python3-tk"
+		else
+			echo "⚠️ Installing python3-tk"
+			sudo apt install python3-tk
+		fi
+                pip install customtkinter
+	#### Export Variables
+		export PYTHONWARNINGS="ignore"
+	#### Run the AI
+		echo "Starting the AI"
+		python -m chatbot-local
+		exit 0
+fi
+echo "ERROR!"
+exit 1
