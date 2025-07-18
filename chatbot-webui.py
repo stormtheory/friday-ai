@@ -88,7 +88,7 @@ def toggle_voice():
 #############################################################################
 
 def list_uploaded_files(thread_name):
-    upload_dir = os.path.join("uploads", thread_name)
+    upload_dir = os.path.join(f"{CONTEXT_DIR}/uploads", thread_name)
     if not os.path.exists(upload_dir):
         return "No files uploaded for this thread."
 

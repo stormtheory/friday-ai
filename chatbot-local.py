@@ -36,7 +36,7 @@ whisper_model = WhisperModel("base", compute_type="int8")
 
 
 def list_uploaded_files(thread_name):
-    upload_dir = os.path.join(f"{THREADS_DIR}/uploads", thread_name)
+    upload_dir = os.path.join(f"{CONTEXT_DIR}/uploads", thread_name)
     if not os.path.exists(upload_dir):
         return "No files uploaded."
     files = os.listdir(upload_dir)
