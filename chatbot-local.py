@@ -9,6 +9,7 @@ import json
 import shutil
 import numpy as np
 import pickle
+import traceback
 
 from faster_whisper import WhisperModel
 from sentence_transformers import SentenceTransformer
