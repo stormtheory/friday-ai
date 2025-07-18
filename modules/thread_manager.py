@@ -49,7 +49,7 @@ def delete_thread(name):
 
     # Delete vector index and metadata
     for ext in [".index", "_meta.pkl"]:
-        p = os.path.join("vector_store", f"{name}{ext}")
+        p = os.path.join(f"{CONTEXT_DIR}/vector_store", f"{name}{ext}")
         if os.path.exists(p):
             os.remove(p)
 

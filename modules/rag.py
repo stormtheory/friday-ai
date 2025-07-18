@@ -5,12 +5,13 @@
 import faiss, pickle, os
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from config import CONTEXT_DIR
 
 embed_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def retrieve_context_rag(query, thread, top_k=5):
-    index_path = f"vector_store/{thread}.index"
-    meta_path = f"vector_store/{thread}_meta.pkl"
+    index_path = f"{CONTEXT_DIR}/vector_store/{thread}.index"
+    meta_path = f"{CONTEXT_DIR}/vector_store/{thread}_meta.pkl"
 
     if not os.path.exists(index_path) or not os.path.exists(meta_path):
         return ""
