@@ -66,10 +66,10 @@ class FridayApp(ctk.CTk):
         self.input_field.pack(pady=10)
         self.input_field.bind("<Return>", self.on_enter_pressed)
 
-        # Thinking indicator label (hidden by default)
-        self.thinking_label = ctk.CTkLabel(self, text="🤔 Thinking...", text_color="gray")
+        # Thinking indicator label
+        self.thinking_label = ctk.CTkLabel(self, text="Status: Idle", text_color="gray")
         self.thinking_label.pack(pady=5)
-        self.thinking_label.pack_forget()
+        #self.thinking_label.pack_forget()
 
         self.send_button = ctk.CTkButton(self, text="Send", command=self.on_send)
         self.send_button.pack(pady=5)
@@ -113,7 +113,7 @@ class FridayApp(ctk.CTk):
         threading.Thread(target=self.process_input, args=(user_input,), daemon=True).start()
 
     def process_input(self, user_input):
-        self.thinking_label.pack()  # Show "Thinking..." indicator
+        self.thinking_label.configure(self, text="🤔 Thinking...", text_color="orange")  # Show "Thinking..." indicator
         self.update_idletasks()
 
         try:
@@ -129,7 +129,7 @@ class FridayApp(ctk.CTk):
         if self.speech_enabled:
             threading.Thread(target=speak, args=(response,), daemon=True).start()
 
-        self.thinking_label.pack_forget()  # Hide "Thinking..." indicator
+        self.thinking_label.configure(self, text="Status: Idle", text_color="gray")
 
     def toggle_voice(self):
         self.speech_enabled = not self.speech_enabled
