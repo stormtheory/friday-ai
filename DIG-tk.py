@@ -181,7 +181,7 @@ def threaded_generate():
 
     except Exception as e:
         print(f"❌ Exception: {e}")
-        root.after(0, lambda: (
+        root.after(0, lambda e=e: (
             status_var.set(f"❌ Error: {str(e)}"),
             stop_flashing(),
             generate_button.config(state=tk.NORMAL)

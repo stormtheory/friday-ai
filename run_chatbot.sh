@@ -218,6 +218,7 @@ elif [ $LOCAL_TK == true ];then
 			sudo apt install python3-tk
 		fi
                 pip install customtkinter
+                pip install pillow # Icon
 	#### Export Variables
 		export PYTHONWARNINGS="ignore"
 	#### Run the AI
