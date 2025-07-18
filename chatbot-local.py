@@ -23,7 +23,7 @@ from modules.thread_manager import (
     list_threads, switch_thread, create_thread, delete_thread
 )
 from utils.file_utils import extract_text_from_json
-from config import DEFAULT_LLM_MODEL, CHATBOT_TITLE, ASSISTANT_PROMPT_NAME, USER_PROMPT_NAME, THREADS_DIR
+from config import DEFAULT_LLM_MODEL, CHATBOT_TITLE, ASSISTANT_PROMPT_NAME, USER_PROMPT_NAME, CONTEXT_DIR
 from core import router
 
 # Load context once at app start
@@ -246,15 +246,15 @@ class FridayApp(ctk.CTk):
 
         # Store file in current thread's upload directory
         thread = self.active_thread
-        upload_dir = os.path.join(f"{THREADS_DIR}/uploads", thread)
+        upload_dir = os.path.join(f"{CONTEXT_DIR}/uploads", thread)
         os.makedirs(upload_dir, exist_ok=True)
         dest_path = os.path.join(upload_dir, os.path.basename(file_path))
         shutil.copy(file_path, dest_path)
 
         # Save vector index and metadata
-        index_path = f"vector_store/{thread}.index"
-        meta_path = f"vector_store/{thread}_meta.pkl"
-        os.makedirs("vector_store", exist_ok=True)
+        index_path = f"{CONTEXT_DIR}/vector_store/{thread}.index"
+        meta_path = f"{CONTEXT_DIR}/vector_store/{thread}_meta.pkl"
+        os.makedirs(f"{CONTEXT_DIR}/vector_store", exist_ok=True)
 
         index = faiss.IndexFlatL2(embeddings.shape[1])
         index.add(embeddings)

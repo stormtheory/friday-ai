@@ -22,7 +22,7 @@ import fitz  # PyMuPDF
 import os
 from datetime import datetime
 import threading
-from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL,DEFAULT_LLM_MODEL
+from config import WEBUI_TITLE,WEBUI_TOP_PAGE_BANNER,WEBUI_CHATBOT_LABEL,WEBUI_SPEAK_TO_TEXT_LABEL,DEFAULT_LLM_MODEL,CONTEXT_DIR
 
 if SpeechState.get():
     # speech is on
@@ -156,15 +156,15 @@ def handle_file(file_path):
     thread = get_active_thread()
     
     # Save file to uploads/{thread}/ folder
-    upload_dir = os.path.join("uploads", thread)
+    upload_dir = os.path.join(f"{CONTEXT_DIR}/uploads", thread)
     os.makedirs(upload_dir, exist_ok=True)
     dest_path = os.path.join(upload_dir, os.path.basename(file_path))
     shutil.copy(file_path, dest_path)
     
-    index_path = f"vector_store/{thread}.index"
-    meta_path = f"vector_store/{thread}_meta.pkl"
+    index_path = f"{CONTEXT_DIR}/vector_store/{thread}.index"
+    meta_path = f"{CONTEXT_DIR}/vector_store/{thread}_meta.pkl"
 
-    os.makedirs("vector_store", exist_ok=True)
+    os.makedirs(f"{CONTEXT_DIR}/vector_store", exist_ok=True)
     index = faiss.IndexFlatL2(embeddings.shape[1])  # Correct dimension
     index.add(embeddings)
 
