@@ -72,22 +72,27 @@ class FridayApp(ctk.CTk):
         # Thinking indicator label
         self.thinking_label = ctk.CTkLabel(self, text="Status: Idle", text_color="gray")
         self.thinking_label.pack(pady=5)
-        #self.thinking_label.pack_forget()
 
-        self.send_button = ctk.CTkButton(self, text="Send", command=self.on_send)
-        self.send_button.pack(pady=5)
+        # Frame to hold grouped buttons horizontally and center them
+        self.button_row = ctk.CTkFrame(self)
+        self.button_row.pack(pady=10, anchor="center")  # Center align the row
 
-        self.voice_btn = ctk.CTkButton(self, text="🔈 Audio On" if self.speech_enabled else "🔇 Audio Off", command=self.toggle_voice)
-        self.voice_btn.pack(pady=5)
+        # Buttons packed side-by-side inside the row
+        self.send_button = ctk.CTkButton(self.button_row, text="Send", command=self.on_send)
+        self.send_button.pack(side="left", padx=5)
 
-        self.upload_btn = ctk.CTkButton(self, text="📁 Upload File (.txt/.pdf/.json)", command=self.select_and_process_file)
-        self.upload_btn.pack(pady=5)
+        self.voice_btn = ctk.CTkButton(self.button_row, text="🔈 Audio On" if self.speech_enabled else "🔇 Audio Off", command=self.toggle_voice)
+        self.voice_btn.pack(side="left", padx=5)
 
-        self.new_thread_btn = ctk.CTkButton(self, text="➕ New Thread", command=self.create_new_thread)
-        self.new_thread_btn.pack(pady=5)
+        self.upload_btn = ctk.CTkButton(self.button_row, text="📁 Upload File (.txt/.pdf/.json)", command=self.select_and_process_file)
+        self.upload_btn.pack(side="left", padx=5)
 
-        self.delete_thread_btn = ctk.CTkButton(self, text="🗑️ Delete Thread", command=self.delete_current_thread)
-        self.delete_thread_btn.pack(pady=10)
+        self.new_thread_btn = ctk.CTkButton(self.button_row, text="➕ New Thread", command=self.create_new_thread)
+        self.new_thread_btn.pack(side="left", padx=5)
+
+        self.delete_thread_btn = ctk.CTkButton(self.button_row, text="🗑️ Delete Thread", command=self.delete_current_thread)
+        self.delete_thread_btn.pack(side="left", padx=5)
+
 
     def refresh_chat_display(self):
         self.chatbox.delete("1.0", "end")
@@ -115,7 +120,7 @@ class FridayApp(ctk.CTk):
             return  # Cancelled or empty input
         
         if new_thread_name in list_threads():
-            ctk.CTkMessagebox(title="Thread Exists", message="⚠️ A thread with that name already exists.")
+            messagebox(title="Thread Exists", message="⚠️ A thread with that name already exists.")
             return
 
         # Create the thread and switch to it
@@ -180,7 +185,7 @@ class FridayApp(ctk.CTk):
         file_path = filedialog.askopenfilename(filetypes=[("Supported", "*.txt *.pdf *.json")])
         if file_path:
             status, _ = self.handle_file(file_path)
-            ctk.CTkMessagebox(title="Upload", message=status)
+            messagebox.showinfo(title="Upload", message=status)
 
     def on_enter_pressed(self, event):
         self.on_send()
