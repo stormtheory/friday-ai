@@ -2,6 +2,9 @@
 # Ported from Gradio frontend to customtkinter
 
 import customtkinter as ctk
+from tkinter import filedialog
+import tkinter as tk
+import tkinter.simpledialog  # Needed for prompt dialog
 import threading
 import os
 import json
@@ -80,6 +83,9 @@ class FridayApp(ctk.CTk):
         self.upload_btn = ctk.CTkButton(self, text="📁 Upload File (.txt/.pdf/.json)", command=self.select_and_process_file)
         self.upload_btn.pack(pady=5)
 
+        self.new_thread_btn = ctk.CTkButton(self, text="➕ New Thread", command=self.create_new_thread)
+        self.new_thread_btn.pack(pady=5)
+
         self.delete_thread_btn = ctk.CTkButton(self, text="🗑️ Delete Thread", command=self.delete_current_thread)
         self.delete_thread_btn.pack(pady=10)
 
@@ -101,6 +107,30 @@ class FridayApp(ctk.CTk):
         # Scroll to the bottom so latest messages are visible
         self.chatbox.see("end")
 
+    def create_new_thread(self):
+        # Ask user for a thread name via simple dialog
+        new_thread_name = tk.simpledialog.askstring("New Thread", "Enter thread name:")
+        
+        if not new_thread_name:
+            return  # Cancelled or empty input
+        
+        if new_thread_name in list_threads():
+            ctk.CTkMessagebox(title="Thread Exists", message="⚠️ A thread with that name already exists.")
+            return
+
+        # Create the thread and switch to it
+        create_thread(new_thread_name)
+        switch_thread(new_thread_name)
+        
+        self.active_thread = new_thread_name
+        self.model = get_thread_model(new_thread_name)
+        self.chat_history = []
+        
+        # Update thread selector options
+        self.thread_selector.configure(values=list_threads())
+        self.thread_selector.set(new_thread_name)
+        
+        self.refresh_chat_display()
 
 
     def on_send(self):
