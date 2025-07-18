@@ -161,17 +161,23 @@ def handle_file(file_path):
     dest_path = os.path.join(upload_dir, os.path.basename(file_path))
     shutil.copy(file_path, dest_path)
     
-    index_path = f"{CONTEXT_DIR}/vector_store/{thread}.index"
-    meta_path = f"{CONTEXT_DIR}/vector_store/{thread}_meta.pkl"
+    # Use filename (without extension) as unique ID for this vector file
+    file_id = os.path.splitext(os.path.basename(file_path))[0]
 
-    os.makedirs(f"{CONTEXT_DIR}/vector_store", exist_ok=True)
-    index = faiss.IndexFlatL2(embeddings.shape[1])  # Correct dimension
+    file_vector_dir = os.path.join(f"{CONTEXT_DIR}/vector_store", thread)
+    os.makedirs(file_vector_dir, exist_ok=True)
+
+    faiss_file = os.path.join(file_vector_dir, f"{file_id}.index")
+    meta_file = os.path.join(file_vector_dir, f"{file_id}_meta.pkl")
+
+    index = faiss.IndexFlatL2(embeddings.shape[1])
     index.add(embeddings)
 
-    faiss.write_index(index, index_path)
-
-    with open(meta_path, "wb") as f:
+    faiss.write_index(index, faiss_file)
+    with open(meta_file, "wb") as f:
         pickle.dump(chunks, f)
+
+
 
     # 🔹 Optional context summary
     snippet = content[:500].strip()
@@ -219,11 +225,29 @@ def on_new_thread(name=None):
 
 
 def on_delete_thread(current):
-    delete_thread(current)
-    threads = list_threads()
+    import shutil
+    import traceback
 
+    try:
+        # Delete uploads
+        uploads_dir = os.path.join(f"{CONTEXT_DIR}/uploads", current)
+        if os.path.exists(uploads_dir):
+            shutil.rmtree(uploads_dir)
+
+        # Delete vectors
+        vector_dir = os.path.join(f"{CONTEXT_DIR}/vector_store", current)
+        if os.path.exists(vector_dir):
+            shutil.rmtree(vector_dir)
+
+        # Delete metadata and history
+        delete_thread(current)
+
+    except Exception as e:
+        traceback.print_exc()
+        return gr.update(visible=True, value="❌ Error deleting thread."), current, []
+
+    threads = list_threads()
     if not threads:
-        # Create a default thread to avoid empty state
         default_thread = "default"
         create_thread(default_thread)
         switch_thread(default_thread)
@@ -235,16 +259,6 @@ def on_delete_thread(current):
     switch_thread(fallback)
     history = get_thread_history(fallback) or []
     return gr.update(choices=threads, value=fallback), fallback, history
-
-# Ensure there is always a thread
-def ensure_default_thread():
-    threads = list_threads()
-    if not threads:
-        create_thread("default")
-        switch_thread("default")
-        threads = list_threads()
-    return threads
-
 
 #################################################################################
 import tempfile
@@ -282,6 +296,14 @@ def handle_audio(audio_path, chatbox_display_history):
 
     return handle_input(transcript, chatbox_display_history)
 
+# Ensure there is always a thread
+def ensure_default_thread():
+    threads = list_threads()
+    if not threads:
+        create_thread("default")
+        switch_thread("default")
+        threads = list_threads()
+    return threads
 
 
 ############################# GUI ###################################################
