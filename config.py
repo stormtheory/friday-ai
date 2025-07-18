@@ -12,6 +12,9 @@ WEBUI_TOP_PAGE_BANNER = '🤖 Friday — Your Local AI Assistant'
 WEBUI_CHATBOT_LABEL = 'Friday'
 WEBUI_SPEAK_TO_TEXT_LABEL = '🎤 Speak to Friday'
 
+CHATBOT_TITLE = 'Friday — Your Local AI Assistant'
+CHATBOT_LABEL = 'Friday'
+
 DIG_WEBUI_TITLE = 'Friday Image Gen'                       # Not currently working 
 DIG_WEBUI_TOP_PAGE_BANNER = ' 🎨 Stable Diffusion Image Generator'
 DIG_WEBUI_FILENAME = 'detailed_XL_friday'  # Will look something like: detailed_XL_friday_{timestamp}.png
@@ -21,8 +24,11 @@ CLI_FRIDAY_EXIT_MESSAGE = 'Goodbye! Have a productive day.'
 
 ### LLM Prompts
 DIG_DEFAULT_PROMPT = "a samurai standing on Mars with a red sun"
-DEFAULT_LLM_MODEL = 'mistral-ollama'         # [ mistral-ollama or mistral-raw or llama3 ]
+DEFAULT_LLM_MODEL = 'mistral-ollama'         # [ mistral-ollama or llama3 or mistral-raw ]
+USER_PROMPT_NAME = 'You'
 ASSISTANT_PROMPT_NAME = 'Friday'
+
+### Pre-Prompts
 LLAMA3_PRE_PROMPT = 'You are Friday, a helpful, concise, AI assistant.' 
 MISTRAL_PRE_PROMPT = 'You are Friday, a helpful, concise, AI assistant. If the user rejects a suggestion, do NOT repeat the same idea. Instead, politely acknowledge and ask how else you can assist.'
 

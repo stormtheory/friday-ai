@@ -39,8 +39,8 @@ EOF
 }
 
 # 🔧 Default values
-WEBUI=true
-LOCAL_TK=false
+WEBUI=false
+LOCAL_TK=true
 DEBUG=false
 
 # 🔍 Parse options
@@ -159,9 +159,6 @@ if [ "$PIP_INSTALL" == True ];then
 	pip install bitsandbytes
 	pip install git+https://github.com/huggingface/huggingface_hub.git
 
-	# WebUI
-	pip install gradio
-
 touch .venv/$RUN
 fi
 
@@ -170,6 +167,7 @@ fi
 
 
 if [ $WEBUI == true ]; then
+		pip install gradio # WebUI
 	#### Export Variables
 		export PYTHONWARNINGS="ignore"
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
