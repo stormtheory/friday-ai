@@ -24,60 +24,69 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # 🧾 Help text
+
 show_help() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
 Options:
-  -w             WebUI GUI    (Default)
-  -l             Local TK GUI
-  -d             Debug mode
-  -h             Show this help message
-
-Example:
-  $0 -vdl
+  -w, --webui       WebUI GUI
+  -l, --local       Local TK GUI (default)
+  --i2i             Run Image to Image Generator (I2I)
+  -d, --debug       Debug mode
+  -h, --help        Show this help message
 EOF
 }
 
-# 🔧 Default values
+# Default values
 WEBUI=false
 LOCAL_TK=true
 DEBUG=false
+RUN_I2I=false
 RUN_POSTFIX='-local'
 
-# 🔍 Parse options
-while getopts ":wldh" opt; do
-  case ${opt} in
-    w)
+# Parse options with getopt
+OPTIONS=$(getopt -o wldh --long webui,local,i2i,debug,help -- "$@")
+if [ $? -ne 0 ]; then
+  show_help
+  exit 1
+fi
+
+eval set -- "$OPTIONS"
+
+while true; do
+  case "$1" in
+    -w|--webui)
       WEBUI=true
-	  LOCAL_TK=false
-	  RUN_POSTFIX='-webui'
-      ;;
-    l)
+      LOCAL_TK=false
+      RUN_POSTFIX='-webui'
+      shift ;;
+    -l|--local)
       LOCAL_TK=true
-	  WEBUI=false
-	  RUN_POSTFIX='-local'
-      ;;
-    d)
+      WEBUI=false
+      RUN_POSTFIX='-local'
+      shift ;;
+    --i2i)
+      RUN_I2I=true
+      LOCAL_TK=false
+      WEBUI=false
+      RUN_POSTFIX='-i2i'
+      shift ;;
+    -d|--debug)
       DEBUG=true
-      ;;
-    h)
+      shift ;;
+    -h|--help)
       show_help
-      exit 0
-      ;;
-    \?)
-      echo "❌ Invalid option: -$OPTARG" >&2
+      exit 0 ;;
+    --)
+      shift
+      break ;;
+    *)
+      echo "❌ Invalid option: $1"
       show_help
-      exit 1
-      ;;
-    :)
-      echo "❌ Option -$OPTARG requires an argument." >&2
-      show_help
-      exit 1
-      ;;
+      exit 1 ;;
   esac
 done
-
 
 
 if [ ! -d $PYENV_DIR ];then
@@ -202,6 +211,26 @@ elif [ $LOCAL_TK == true ];then
 	#### Run the AI
 		echo "Starting the Detailed Image Gen (DIG) Tinkter"
 		python -m DIG-tk
+		exit 0
+elif [ $RUN_I2I == true ];then
+	#### Check dependancies
+                if [ ! -f "$PYENV_DIR/$RUN$RUN_POSTFIX" ];then
+                    APT_LIST=$(apt list 2>/dev/null)
+                    if echo "$APT_LIST"|grep python3-tk;then
+                            echo "✅ Installed... python3-tk"
+                    else
+                            echo "⚠️ Installing python3-tk"
+                            sudo apt install python3-tk
+                    fi
+                    pip install customtkinter
+                    pip install pillow # Icon
+                    touch $PYENV_DIR/$RUN$RUN_POSTFIX
+                fi
+	#### Export Variables
+		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+	#### Run the AI
+		echo "Starting the Image to Image Gen (I2I) Tinkter"
+		python -m img2img-transformer
 		exit 0
 fi
 echo "ERROR!"
