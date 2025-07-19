@@ -201,7 +201,7 @@ neg_row.pack(pady=2)
 ctk.CTkLabel(neg_row, text="Negative Prompt", width=120, anchor="e").pack(side="left")
 ctk.CTkEntry(neg_row, textvariable=neg_prompt_var, width=600).pack(side="left", padx=5)
 
-generate_btn = ctk.CTkButton(main_frame, text="🚀 Generate", width=120, command=run_generation)
+generate_btn = ctk.CTkButton(main_frame, text="🚀 Transform", width=120, command=run_generation)
 generate_btn.pack(pady=10)
 
 root.mainloop()
