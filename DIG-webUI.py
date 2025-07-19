@@ -9,6 +9,7 @@ from datetime import datetime
 import getpass
 import json
 import re
+import gc
 from config import DIG_DEFAULT_PROMPT as DEFAULT_PROMPT
 from config import (
     DIG_WEBUI_TITLE,
@@ -26,7 +27,16 @@ from config import (
 
 # 🔐 Thread storage directory
 DEFAULT_THREAD_NAME = "Default"
+
+# ⚙️ Memory management environment
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+gc.collect()
 torch.cuda.empty_cache()
+
+# Run diffusers and transformers in offline mode
+from transformers.utils import logging
+logging.set_verbosity_error()
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 # Load the model
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"

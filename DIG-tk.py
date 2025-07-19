@@ -22,6 +22,12 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 gc.collect()
 torch.cuda.empty_cache()
 
+# Run diffusers and transformers in offline mode
+from transformers.utils import logging
+logging.set_verbosity_error()
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+
 if torch.cuda.is_available():
     print(f"🧠 Using GPU: {torch.cuda.get_device_name(0)}")
     print(f"🔋 VRAM available: {torch.cuda.mem_get_info()[0] / 1024**2:.2f} MB")
