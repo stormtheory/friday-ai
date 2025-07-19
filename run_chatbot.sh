@@ -45,6 +45,7 @@ WEBUI=false
 LOCAL_TK=true
 CHAT_CLI=false
 DEBUG=false
+RUN_POSTFIX='-local'
 
 # 🔍 Parse options
 while getopts ":wldhc" opt; do

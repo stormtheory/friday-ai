@@ -1,20 +1,26 @@
 # friday-ai:
 FRIDAY (Friendly Responsive Intelligent Digital Assistant for You)
-F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under the name alias Stormtheory — designed to offer the power of GPT-like models with full privacy, locally ran, with security, and user control at its core.
+F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under the name alias Stormtheory — designed to offer the power of GPT-like models with full privacy, locally hosted, with security, and user control at its core.
 
 Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home — no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
 
 # In the Works:
-- As always: Fighting to keep this AI free, private, fast, and easy (in that order).
+- As always: Fighting to keep this AI free, private, opensource, fast, and easy (in that order).
 - Updating screenshots.
 - Adding more features to the new Local Tkinter Chatbot.
 - Porting Local Tkinter DIG to customtkinter like Chatbot.
 - Making a chat bot that can tell a story while making illustrations with the image generator.
 - Getting a Female Voice (Running into privacy issues) Did this with gTTS but AI responses were being routed to Google and others to Microsoft.
 
+Upon Request:
+- Add YUM support.
+- Add AMD support.
+
 # Ultimate Goals
-- A free, private, fast, and easy inhome AI that can do tasks outside of just being a chatbot.
-- Change the temparture in the home, set calender events, hold a complex conversation, set reminders, intergrate into a smart speaker and many other features and tasks we see in AI apps now but 100% private and free.
+- A free, private, fast, and easy in home AI that can do tasks outside of just being a chatbot.
+- Change the temperature in the home, set calender events, hold a complex conversation, set reminders, along with many other features and tasks we see in AI apps now.
+- Integrate into a smart speaker but 100% private and free.
+- A home/small business(watch your licensing) network monitor and defender.
 
 # System Requirements:
 - Ubuntu/Mint is only tested to be supported.
@@ -94,6 +100,9 @@ All saved data other then pictures are saved in ~/.friday_ai_data/ unless change
   	firefox http://127.0.0.1:7860
 
 # Image Screenshots:
+### Chatbot Local Window App
+<img width="960" height="748" alt="Image" src="https://github.com/user-attachments/assets/820f13e3-5f78-4cc2-a1ba-72de8642f711" />
+
 ### Detailed Image Generator Local webUI
 <img width="774" height="791" alt="Image" src="https://github.com/user-attachments/assets/002a07aa-40cf-44e8-8d79-16766abfc461" />
 
@@ -101,10 +110,10 @@ All saved data other then pictures are saved in ~/.friday_ai_data/ unless change
 <img width="987" height="366" alt="Image" src="https://github.com/user-attachments/assets/b2d88abb-d707-4eac-bf73-83c8560a772b" />
 
 ## friday_cli
-<img width="654" height="194" alt="Image" src="https://github.com/user-attachments/assets/87a2fb25-27e0-4049-94a6-e4ab9b85302b" />
+<img width="958" height="224" alt="Image" src="https://github.com/user-attachments/assets/cda0f84b-b81d-48dd-a337-e8c6ec7dec40" />
 
 ## friday_local_webUI
-<img width="1280" height="906" alt="Image" src="https://github.com/user-attachments/assets/aa1c13e8-5ae0-43c5-aa62-842765d42392" />
+<img width="1494" height="886" alt="Image" src="https://github.com/user-attachments/assets/54f8d17f-bc45-44ff-9318-8ace9d07f1fc" />
 
 # User Agreement:
 This project is not a company or business. By using this project’s works, scripts, or code know that you, out of respect are entitled to privacy to highest grade. This product will not try to steal, share, collect, or sell your information. However 3rd parties such at Github may try to use your data without your consent. Users or admins should make reports of issue(s) related to the project’s product to the project to better equip or fix issues for others who may run into the same issue(s). By using this project’s works, scripts, code, or ideas you as the end user or admin agree to the GPL-2.0 License statements and acknowledge the lack of Warranty. As always, give us a Star on Github if you find this useful, and come help us make it better.

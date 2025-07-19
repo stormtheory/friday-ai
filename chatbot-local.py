@@ -29,6 +29,13 @@ from config import DEFAULT_LLM_MODEL, CHATBOT_TITLE, ASSISTANT_PROMPT_NAME, USER
 from core import router
 from PIL import Image, ImageTk
 
+TEXT_SIZE_OPTIONS = {
+    "Small": 12,
+    "Medium": 14,
+    "Large": 16,
+    "Extra Large": 18
+}
+
 # Load context once at app start
 load_context()
 
@@ -48,7 +55,6 @@ def list_uploaded_files(thread_name):
     lines = [f"- {f} ({os.path.getsize(os.path.join(upload_dir, f)) / 1024:.1f} KB)"
              for f in files]
     return "\n".join(lines)
-
 
 class FridayApp(ctk.CTk):
     def __init__(self):
@@ -76,11 +82,33 @@ class FridayApp(ctk.CTk):
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
 
+        # Frame to hold grouped buttons horizontally and center them
+        self.button_row1 = ctk.CTkFrame(self)
+        self.button_row1.pack(pady=10, padx=0, anchor="center")
+        
+        # Label for Thread dropdown
+        font_label = ctk.CTkLabel(self.button_row1, text="Chat Thread:")
+        font_label.pack(side="left", padx=(0, 2))
+        # Thread Dropdown
         self.thread_selector = ctk.CTkOptionMenu(
-            self, values=list_threads(), command=self.on_switch_thread
+            self.button_row1, values=list_threads(), command=self.on_switch_thread
         )
         self.thread_selector.set(self.active_thread)
-        self.thread_selector.pack(pady=10)
+        self.thread_selector.pack(side="left", pady=10, padx=5)
+        
+        # --- Font Size Dropdown ---
+        # Label for font size dropdown
+        font_label = ctk.CTkLabel(self.button_row1, text="Text Size:")
+        font_label.pack(side="left", padx=(0, 2))
+        
+        self.font_size_selector = ctk.CTkOptionMenu(
+            self.button_row1,
+            values=list(TEXT_SIZE_OPTIONS.keys()),
+            command=self.change_font_size
+        )
+        self.font_size_selector.set("Medium")
+        self.font_size_selector.pack(side="right", pady=5, padx=5)
+
 
         self.chatbox = ctk.CTkTextbox(self, width=850, height=400)
         self.chatbox.pack(pady=5)
@@ -95,23 +123,23 @@ class FridayApp(ctk.CTk):
         self.thinking_label.pack(pady=5)
 
         # Frame to hold grouped buttons horizontally and center them
-        self.button_row = ctk.CTkFrame(self)
-        self.button_row.pack(pady=10, anchor="center")
+        self.button_row2 = ctk.CTkFrame(self)
+        self.button_row2.pack(pady=10, anchor="center")
 
         # Buttons packed side-by-side inside the row
-        self.send_button = ctk.CTkButton(self.button_row, text="Send", command=self.on_send)
+        self.send_button = ctk.CTkButton(self.button_row2, text="Send", command=self.on_send)
         self.send_button.pack(side="left", padx=5)
 
-        self.voice_btn = ctk.CTkButton(self.button_row, text="🔈 Audio On" if self.speech_enabled else "🔇 Audio Off", command=self.toggle_voice)
+        self.voice_btn = ctk.CTkButton(self.button_row2, text="🔈 Audio On" if self.speech_enabled else "🔇 Audio Off", command=self.toggle_voice)
         self.voice_btn.pack(side="left", padx=5)
 
-        self.upload_btn = ctk.CTkButton(self.button_row, text="📁 Upload File (.txt/.pdf/.json)", command=self.select_and_process_file)
+        self.upload_btn = ctk.CTkButton(self.button_row2, text="📁 Upload File (.txt/.pdf/.json)", command=self.select_and_process_file)
         self.upload_btn.pack(side="left", padx=5)
 
-        self.new_thread_btn = ctk.CTkButton(self.button_row, text="➕ New Thread", command=self.create_new_thread)
+        self.new_thread_btn = ctk.CTkButton(self.button_row2, text="➕ New Thread", command=self.create_new_thread)
         self.new_thread_btn.pack(side="left", padx=5)
 
-        self.delete_thread_btn = ctk.CTkButton(self.button_row, text="🗑️ Delete Thread", command=self.delete_current_thread)
+        self.delete_thread_btn = ctk.CTkButton(self.button_row2, text="🗑️ Delete Thread", command=self.delete_current_thread)
         self.delete_thread_btn.pack(side="left", padx=5)
 
         # --- Uploaded Files Label & Viewer ---
@@ -182,6 +210,26 @@ class FridayApp(ctk.CTk):
             del_btn = ctk.CTkButton(file_row, text="❌ Delete", width=80,
                                     command=lambda f=filename: self.delete_uploaded_file(f))
             del_btn.pack(side="right", padx=5)
+
+    def change_font_size(self, size_label):
+        size = TEXT_SIZE_OPTIONS.get(size_label, 14)  # Default to 14 if not found
+        font = ctk.CTkFont(size=size)
+        # Apply font to all relevant widgets
+        self.chatbox.configure(font=font)
+        self.input_field.configure(font=font)
+        self.thinking_label.configure(font=font)
+        self.files_label.configure(font=ctk.CTkFont(size=size, weight="bold"))
+        self.thread_selector.configure(font=font)
+        self.voice_btn.configure(font=font)
+        self.send_button.configure(font=font)
+        self.upload_btn.configure(font=font)
+        self.new_thread_btn.configure(font=font)
+        self.delete_thread_btn.configure(font=font)
+        self.font_size_selector.configure(font=font)
+        # Also apply to file list
+        for widget in self.files_frame.winfo_children():
+            for child in widget.winfo_children():
+                child.configure(font=font)
 
     def delete_uploaded_file(self, filename):
         upload_dir = os.path.join(f"{CONTEXT_DIR}/uploads", self.active_thread)
