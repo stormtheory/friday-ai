@@ -31,9 +31,9 @@ Upon Request:
 - Ubuntu/Mint is only tested to be supported.
 - Nvidia GPU(s) and nvidia-driver but AMD can be added.
 	- Tested with a 8GB NVIDIA RTX 3060 TI
-- At least 8GBs or 14GBs of homespace depending on the number of AI models
-- At least 20GBs of Harddrive space
-- At least 4GBs of /tmp space (first time install)
+- At least 10GBs or 14GBs of homespace depending on the number of AI models
+- At least 30GBs of Harddrive space
+- At least 5GBs of /tmp space (first time install)
 
 Friday could work on RHEL/Rocky/CentOS, no Yum/DNF package support yet. 
 Please feedback if you want a YUM/DNF .rpm package. 
@@ -91,16 +91,32 @@ If there is interest in other Linux flavors/families please let me know or it's 
         ./run_chatbot.sh -w
         firefox http://127.0.0.1:7860
 
-# Tips/Tricks:
+# Tips/Tricks/File Locations:
 All images generated are saved to your Pictures directory in your homespace un a folder called AI:
         
 	cd ~/Pictures/AI/ ; ls
 
 All saved data other then pictures are saved in ~/.friday_ai_data/ unless changed in config.py from the default.
 
-        cd ~/.friday_ai_data/   ### See your data and history.
- 
- By default the webUI after ran can be found by running this command:
+        cd ~/.friday_ai_data/   ### Saved your settings, data, and history.
+
+Pip install location:
+
+        ./.venv     # within the friday-ai dir
+
+Huggingface models and data is saved:
+
+        ~/.cache/huggingface
+
+Ollama files are found here:
+
+        /etc/systemd/system/ollama.service
+        /usr/bin/ollama
+        /usr/lib/ollama/
+        /usr/share/ollama/
+        /usr/share/ollama/.ollama/models/manifests/registry.ollama.ai/library/  # Saved LLM location
+
+By default the webUI after ran can be found by running this command:
  	
   	firefox http://127.0.0.1:7860
 
