@@ -1,27 +1,35 @@
 # AI Image-to-Image Generator
 # By StormTheory – Privacy-focused, GPU-efficient
 
+import os
+from pathlib import Path
+import datetime
+import gc
+
 import customtkinter as ctk
 from tkinter import filedialog
-from PIL import Image
-import os
-import gc
-import datetime
-from pathlib import Path
-from config import DIG_DEFAULT_PROMPT, DIG_PICTURE_NEG_PROMPT, DIG_PICTURE_HEIGHT, DIG_PICTURE_NUM_INFERENCE_STEPS, DIG_PICTURE_WIDTH, DIG_PICTURE_GUIDANCE_SCALE, DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
+from PIL import Image, ImageOps
 
+from config import (
+    DIG_DEFAULT_PROMPT,
+    DIG_PICTURE_NEG_PROMPT,
+    DIG_PICTURE_HEIGHT,
+    DIG_PICTURE_NUM_INFERENCE_STEPS,
+    DIG_PICTURE_WIDTH,
+    DIG_PICTURE_GUIDANCE_SCALE,
+    DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
+)
 
-# 🧠 Use the CPU as well
+# 🧠 Set PyTorch env early for CUDA memory fragmentation control
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import torch
 from diffusers import StableDiffusionXLImg2ImgPipeline
 
-# 🧠 Optimize VRAM + load pipeline offline
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+# 🧠 Clean GPU memory before loading
 gc.collect()
 torch.cuda.empty_cache()
 
-# 🎛️ Init Tk
+# 🎛️ Init Tkinter and CustomTkinter
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
 
@@ -29,7 +37,7 @@ root = ctk.CTk()
 root.title("🧠 AI Image-to-Image Generator")
 root.geometry("1200x800")
 
-# 🧠 Model setup
+# 🧠 Load stable diffusion XL img2img pipeline
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
     model_id,
@@ -46,20 +54,20 @@ pipe.enable_attention_slicing()
 if torch.cuda.is_available():
     print(f"🧠 Using GPU: {torch.cuda.get_device_name(0)}")
 
-# Global vars
+# --- Globals ---
 uploaded_image = None
 uploaded_path = None
+
 image_metadata_var = ctk.StringVar(value="No image loaded")
-prompt_var = ctk.StringVar()
-neg_prompt_var = ctk.StringVar()
+prompt_var = ctk.StringVar(value=DIG_DEFAULT_PROMPT)
+neg_prompt_var = ctk.StringVar(value=DIG_PICTURE_NEG_PROMPT)
+width_var = ctk.StringVar(value=str(DIG_PICTURE_WIDTH))
+height_var = ctk.StringVar(value=str(DIG_PICTURE_HEIGHT))
+guidance_scale_var = ctk.StringVar(value=str(DIG_PICTURE_GUIDANCE_SCALE))
+steps_var = ctk.StringVar(value=str(DIG_PICTURE_NUM_INFERENCE_STEPS))
+strength_var = ctk.StringVar(value="0.7")  # custom default
 
-width_var = ctk.StringVar(value="512")
-height_var = ctk.StringVar(value="512")
-guidance_scale_var = ctk.StringVar(value="7.5")
-steps_var = ctk.StringVar(value="40")
-strength_var = ctk.StringVar(value="0.7")
-
-# 📤 Upload
+# --- Upload Image ---
 def upload_image():
     global uploaded_image, uploaded_path
     pictures_dir = str(Path.home() / "Pictures")
@@ -80,7 +88,7 @@ def upload_image():
     except Exception as e:
         image_metadata_var.set(f"⚠️ Error loading image: {e}")
 
-# 🧠 Generate
+# --- Generate Image ---
 def run_generation():
     global uploaded_image
     if uploaded_image is None:
@@ -88,17 +96,20 @@ def run_generation():
         return
     try:
         torch.cuda.empty_cache()
-        prompt = prompt_var.get().strip() or "A futuristic cityscape"
-        neg_prompt = neg_prompt_var.get().strip()
-        gs = float(guidance_scale_var.get())
-        steps = int(steps_var.get())
-        width = int(width_var.get())
-        height = int(height_var.get())
-        strength = float(strength_var.get())
 
-        # Resize uploaded image
+        # Use defaults if user clears inputs
+        prompt = prompt_var.get().strip() or DIG_DEFAULT_PROMPT
+        neg_prompt = neg_prompt_var.get().strip() or DIG_PICTURE_NEG_PROMPT
+        gs = float(guidance_scale_var.get() or DIG_PICTURE_GUIDANCE_SCALE)
+        steps = int(steps_var.get() or DIG_PICTURE_NUM_INFERENCE_STEPS)
+        width = int(width_var.get() or DIG_PICTURE_WIDTH)
+        height = int(height_var.get() or DIG_PICTURE_HEIGHT)
+        strength = float(strength_var.get() or 0.7)
+
+        # Resize uploaded image to requested dimensions
         init_image = uploaded_image.resize((width, height))
 
+        # Run img2img generation
         result = pipe(
             prompt=prompt,
             negative_prompt=neg_prompt,
@@ -107,32 +118,37 @@ def run_generation():
             guidance_scale=gs,
             num_inference_steps=steps
         ).images[0]
-        
-        # 🧼 Clean image (strip EXIF + auto-orient and Meta Data for safety & display consistency)
-        from PIL import ImageOps
+
+        # Clean image metadata and convert to RGB
         result_rgb = ImageOps.exif_transpose(result).convert("RGB")
 
+        # Show preview scaled down
         preview = result_rgb.resize((256, 256))
         out_img = ctk.CTkImage(light_image=preview, size=(256, 256))
         output_img_label.configure(image=out_img)
         output_img_label.image = out_img
-             
 
-        # Save output
+        # Save output to user's Pictures directory
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = os.path.expanduser(f"~/Pictures/generated_{timestamp}.png")
+        save_dir = os.path.expanduser(f"~/{DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION}")
+        os.makedirs(save_dir, exist_ok=True)
+        out_path = os.path.join(save_dir, f"generated_{timestamp}.png")
         result_rgb.save(out_path)
+
         image_metadata_var.set(f"✅ Saved: {os.path.basename(out_path)}")
+
     except Exception as e:
         image_metadata_var.set(f"❌ Generation error: {str(e)}")
 
-# UI Building
+# --- UI Building ---
+
 main_frame = ctk.CTkFrame(root)
 main_frame.pack(padx=10, pady=10, fill="both", expand=True)
 
 display_frame = ctk.CTkFrame(main_frame)
 display_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
+# Left panel: Current Image + metadata + upload button
 left_panel = ctk.CTkFrame(display_frame)
 left_panel.pack(side="left", padx=10)
 
@@ -141,11 +157,14 @@ input_img_label = ctk.CTkLabel(left_panel, width=256, height=256)
 input_img_label.pack()
 
 ctk.CTkLabel(left_panel, textvariable=image_metadata_var, font=ctk.CTkFont(size=12)).pack(pady=10)
+
 upload_btn = ctk.CTkButton(left_panel, text="📤 Upload Image", command=upload_image)
 upload_btn.pack(pady=5)
 
+# Middle "arrow" label
 ctk.CTkLabel(display_frame, text="->  ->  ->", font=ctk.CTkFont(size=24)).pack(side="left", padx=20)
 
+# Right panel: Transformed image + options
 right_panel = ctk.CTkFrame(display_frame)
 right_panel.pack(side="left", padx=10)
 
@@ -168,6 +187,7 @@ create_option_row(options_frame, "Guidance Scale", guidance_scale_var)
 create_option_row(options_frame, "Steps", steps_var)
 create_option_row(options_frame, "Strength", strength_var)
 
+# Prompt section
 prompt_section = ctk.CTkFrame(main_frame)
 prompt_section.pack(fill="x", pady=10)
 
