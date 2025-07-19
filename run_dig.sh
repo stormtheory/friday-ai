@@ -206,7 +206,3 @@ elif [ $LOCAL_TK == true ];then
 fi
 echo "ERROR!"
 exit 1
-
-
-
-

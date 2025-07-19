@@ -1,8 +1,8 @@
 # Written by StormTheory
-# Fixed and Upgraded by ChatGPT (OpenAI)
 
-import tkinter as tk
-from tkinter import ttk, filedialog
+import customtkinter as ctk
+import tkinter.filedialog as filedialog
+from tkinter import ttk
 from PIL import ImageTk, Image
 from datetime import datetime
 import torch
@@ -22,7 +22,6 @@ torch.cuda.empty_cache()
 if torch.cuda.is_available():
     print(f"🧠 Using GPU: {torch.cuda.get_device_name(0)}")
     print(f"🔋 VRAM available: {torch.cuda.mem_get_info()[0] / 1024**2:.2f} MB")
-
 
 # 🧠 Model and config import
 from diffusers import StableDiffusionXLPipeline
@@ -115,7 +114,7 @@ def start_flashing():
     def flash():
         nonlocal index
         status_var.set("🚧 Generating...")
-        status_label.config(fg=colors[index % len(colors)])
+        status_label.configure(text_color=colors[index % len(colors)])
         index += 1
         globals()["flash_job"] = root.after(500, flash)
 
@@ -129,7 +128,7 @@ def stop_flashing():
 
 # 🔄 Generation thread logic
 def generate_image():
-    generate_button.config(state=tk.DISABLED)
+    generate_button.configure(state="disabled")
     start_flashing()
     threading.Thread(target=threaded_generate, daemon=True).start()
 
@@ -175,7 +174,7 @@ def threaded_generate():
             image_label.configure(image=imgtk)
             image_label.image = imgtk
             stop_flashing()
-            generate_button.config(state=tk.NORMAL)
+            generate_button.configure(state="normal")
 
         root.after(0, update_ui)
 
@@ -184,7 +183,7 @@ def threaded_generate():
         root.after(0, lambda e=e: (
             status_var.set(f"❌ Error: {str(e)}"),
             stop_flashing(),
-            generate_button.config(state=tk.NORMAL)
+            generate_button.configure(state="normal")
         ))
 
 # 💾 Save and load thread configurations
@@ -205,7 +204,7 @@ def save_thread():
         "save_location": save_location_var.get()
     }
     save_config(name, config)
-    thread_menu["values"] = list_threads()
+    thread_menu.configure(values=list_threads())
     thread_menu.set(name)
     status_var.set(f"✅ Thread '{name}' saved.")
 
@@ -221,70 +220,170 @@ def load_thread(event=None):
     filename_prefix_var.set(cfg["filename_prefix"])
     save_location_var.set(cfg["save_location"])
 
+######################################################################################
 def delete_thread_ui():
     name = thread_var.get()
-    if delete_thread(name):
-        thread_menu["values"] = list_threads()
-        thread_menu.set(DEFAULT_THREAD_NAME)
-        status_var.set(f"🗑️ Deleted '{name}'")
-        load_thread()
-    else:
-        status_var.set("⚠️ Cannot delete this thread.")
 
-# 🖼️ GUI setup
-root = tk.Tk()
+    # 🚫 Prevent deletion of default thread
+    if name == DEFAULT_THREAD_NAME:
+        status_var.set("⚠️ Cannot delete the default thread.")
+        return
+
+    # 🪟 Confirmation popup
+    popup = ctk.CTkToplevel(root)
+    popup.title("Confirm Delete")
+    popup.geometry("320x160")
+
+    # 🧱 Layout components inside popup
+    message = ctk.CTkLabel(
+        popup,
+        text=f"Are you sure you want to delete\nthread '{name}'?",
+        font=ctk.CTkFont(size=14),
+        justify="center"
+    )
+    message.pack(pady=20)
+
+    # 👉 Action buttons (Cancel / Confirm)
+    button_frame = ctk.CTkFrame(popup)
+    button_frame.pack(pady=10)
+
+    def cancel_deletion():
+        popup.destroy()
+
+    def confirm_deletion():
+        if delete_thread(name):
+            thread_menu.configure(values=list_threads())
+            thread_menu.set(DEFAULT_THREAD_NAME)
+            status_var.set(f"🗑️ Deleted '{name}'")
+            load_thread()
+        else:
+            status_var.set("⚠️ Deletion failed.")
+        popup.destroy()
+
+    ctk.CTkButton(button_frame, text="❌ Cancel", command=cancel_deletion, width=100).pack(side="left", padx=10)
+    ctk.CTkButton(button_frame, text="🗑️ Confirm", command=confirm_deletion, fg_color="red", hover_color="#aa0000", width=100).pack(side="left", padx=10)
+
+    # ✅ Delay grab until window is rendered
+    popup.after(100, popup.grab_set)
+
+################################################################################################
+
+
+# 🖼️ GUI setup using CustomTkinter
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("green")
+
+root = ctk.CTk()
 root.title(DIG_WEBUI_TITLE)
-root.geometry("650x1100")
+root.geometry("700x1100")
 
-prompt_var = tk.StringVar()
-neg_prompt_var = tk.StringVar()
-guidance_scale_var = tk.StringVar(value=str(DIG_PICTURE_GUIDANCE_SCALE))
-steps_var = tk.StringVar(value=str(DIG_PICTURE_NUM_INFERENCE_STEPS))
-width_var = tk.StringVar(value=str(DIG_PICTURE_WIDTH))
-height_var = tk.StringVar(value=str(DIG_PICTURE_HEIGHT))
-filename_prefix_var = tk.StringVar(value=DIG_WEBUI_FILENAME)
-save_location_var = tk.StringVar(value=DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION)
-thread_name_var = tk.StringVar()
-thread_var = tk.StringVar()
-status_var = tk.StringVar()
+# 🧠 Variables
+prompt_var = ctk.StringVar()
+neg_prompt_var = ctk.StringVar()
+guidance_scale_var = ctk.StringVar(value=str(DIG_PICTURE_GUIDANCE_SCALE))
+steps_var = ctk.StringVar(value=str(DIG_PICTURE_NUM_INFERENCE_STEPS))
+width_var = ctk.StringVar(value=str(DIG_PICTURE_WIDTH))
+height_var = ctk.StringVar(value=str(DIG_PICTURE_HEIGHT))
+filename_prefix_var = ctk.StringVar(value=DIG_WEBUI_FILENAME)
+save_location_var = ctk.StringVar(value=DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION)
+thread_name_var = ctk.StringVar()
+thread_var = ctk.StringVar()
+status_var = ctk.StringVar()
 
-tk.Label(root, text=DIG_WEBUI_TOP_PAGE_BANNER, font=("Arial", 16)).pack(pady=10)
-tk.Label(root, text="Prompt").pack()
-prompt_entry = tk.Entry(root, textvariable=prompt_var, width=80)
-prompt_entry.pack()
+# 🧠 UI Layout  ########################################
+
+
+ctk.CTkLabel(root, text=DIG_WEBUI_TOP_PAGE_BANNER, font=ctk.CTkFont(size=18, weight="bold")).pack(pady=10)
+
+prompt_frame = ctk.CTkFrame(root)
+prompt_frame.pack(padx=10, pady=10, fill="x")
+
+thread_frame = ctk.CTkFrame(prompt_frame)
+thread_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(thread_frame, text="Thread", width=150, anchor="e").pack(side="left")
+ctk.CTkComboBox(thread_frame, variable=thread_var, values=list_threads(), command=load_thread).pack(side="left", padx=(10, 0))
+
+ctk.CTkLabel(prompt_frame, text="Prompt").pack()
+prompt_entry = ctk.CTkEntry(prompt_frame, textvariable=prompt_var, width=500)
+prompt_entry.pack(pady=4)
 prompt_entry.bind("<Return>", lambda event: generate_image())
 
-status_label = tk.Label(root, textvariable=status_var, fg="green")
+status_label = ctk.CTkLabel(prompt_frame, textvariable=status_var, text_color="green")
 status_label.pack()
-#tk.Label(root, textvariable=status_var, fg="green").pack()
 
-frame = tk.LabelFrame(root, text="Advanced Settings")
-frame.pack(fill="x", padx=10, pady=5)
 
-tk.Label(frame, text="Negative Prompt").pack()
-tk.Entry(frame, textvariable=neg_prompt_var, width=80).pack()
+#############################################################################################
 
-for label, var in [("Guidance Scale [1 - 20]", guidance_scale_var), ("Steps [20 - 100]", steps_var),
-                   ("Width", width_var), ("Height", height_var),
-                   ("Save Subfolder", save_location_var), ("Filename Prefix", filename_prefix_var)]:
-    tk.Label(frame, text=label).pack()
-    tk.Entry(frame, textvariable=var, width=30).pack()
+advanced_frame = ctk.CTkFrame(root)
+advanced_frame.pack(padx=10, pady=10, fill="x")
 
-tk.Label(root, text="Thread").pack()
-thread_menu = ttk.Combobox(root, textvariable=thread_var, values=list_threads(), state="readonly")
-thread_menu.pack()
-thread_menu.bind("<<ComboboxSelected>>", load_thread)
+ctk.CTkLabel(advanced_frame, text="Negative Prompt").pack()
+ctk.CTkEntry(advanced_frame, textvariable=neg_prompt_var, width=500).pack()
 
-tk.Entry(root, textvariable=thread_name_var, width=30).pack(pady=3)
-tk.Button(root, text="💾 Save Thread", command=save_thread).pack()
-tk.Button(root, text="🗑️ Delete Thread", command=delete_thread_ui).pack(pady=2)
+# 🔧 Advanced Inputs
+# Guidance Scale row
+guidance_frame = ctk.CTkFrame(advanced_frame)  # Row container
+guidance_frame.pack(pady=3, anchor="center")  # Center anchored
 
-generate_button = tk.Button(root, text="Generate Image", command=generate_image)
+ctk.CTkLabel(guidance_frame, text="Guidance Scale [1 - 20]", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(guidance_frame, textvariable=guidance_scale_var, width=180).pack(side="left", padx=(10, 0))
+
+# Steps row
+steps_frame = ctk.CTkFrame(advanced_frame)
+steps_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(steps_frame, text="Steps [20 - 100]", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(steps_frame, textvariable=steps_var, width=180).pack(side="left", padx=(10, 0))
+
+############################################################################################
+
+# Width row
+width_frame = ctk.CTkFrame(advanced_frame)
+width_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(width_frame, text="Width", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(width_frame, textvariable=width_var, width=180).pack(side="left", padx=(10, 0))
+
+# Height row
+height_frame = ctk.CTkFrame(advanced_frame)
+height_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(height_frame, text="Height", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(height_frame, textvariable=height_var, width=180).pack(side="left", padx=(10, 0))
+
+#########################################
+
+# Save Subfolder row
+save_frame = ctk.CTkFrame(advanced_frame)
+save_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(save_frame, text="Save Subfolder", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(save_frame, textvariable=save_location_var, width=180).pack(side="left", padx=(10, 0))
+
+filename_frame = ctk.CTkFrame(advanced_frame)
+filename_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(filename_frame, text="Filename Prefix", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(filename_frame, textvariable=filename_prefix_var, width=180).pack(side="left", padx=(10, 0))
+
+
+
+#ctk.CTkLabel(root, text="Thread").pack()
+#thread_menu = ctk.CTkComboBox(root, variable=thread_var, values=list_threads(), command=load_thread)
+#thread_menu.pack(pady=4)
+
+ctk.CTkEntry(root, textvariable=thread_name_var, width=200).pack(pady=2)
+ctk.CTkButton(root, text="💾 Save Thread", command=save_thread).pack()
+ctk.CTkButton(root, text="🗑️ Delete Thread", command=delete_thread_ui).pack(pady=2)
+
+generate_button = ctk.CTkButton(root, text="Generate Image", command=generate_image)
 generate_button.pack(pady=5)
 
-image_label = tk.Label(root)
+image_label = ctk.CTkLabel(root, text="")
 image_label.pack()
 
+# 🖼️ Icon
 if os.path.exists(ICON_PATH):
     try:
         icon_img = ImageTk.PhotoImage(Image.open(ICON_PATH))
