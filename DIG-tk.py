@@ -1,7 +1,7 @@
 # Written by StormTheory
 
 import customtkinter as ctk
-import tkinter.filedialog as filedialog
+from tkinter import filedialog, messagebox, simpledialog
 from tkinter import ttk
 from PIL import ImageTk, Image
 from datetime import datetime
@@ -13,6 +13,9 @@ import re
 import gc
 import threading
 from accelerate import PartialState
+
+MAX_TOKEN = 77
+CHARACTER_LIMIT = MAX_TOKEN * 3
 
 # ⚙️ Memory management environment
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -133,7 +136,7 @@ def generate_image():
     threading.Thread(target=threaded_generate, daemon=True).start()
 
 def threaded_generate():
-    print("🧵 Thread started")
+    print("🧵 Preset started")
     try:
         torch.cuda.empty_cache()
 
@@ -186,6 +189,42 @@ def threaded_generate():
             generate_button.configure(state="normal")
         ))
 
+
+def create_new_preset():
+    # Modal dialog for new preset name input
+    new_thread_name = simpledialog.askstring("New Preset", "Enter preset name:", parent=root)
+    if not new_thread_name:
+        return
+    new_thread_name = new_thread_name.strip()
+
+    # Check if preset already exists
+    if new_thread_name in list_threads():
+        messagebox.showinfo("Preset Exists", "⚠️ A preset with that name already exists.", parent=root)
+        return
+
+    # Save the current config as the new preset to initialize it
+    current_config = {
+        "prompt": prompt_var.get(),
+        "neg_prompt": neg_prompt_var.get(),
+        "guidance_scale": float(guidance_scale_var.get()),
+        "steps": int(steps_var.get()),
+        "width": int(width_var.get()),
+        "height": int(height_var.get()),
+        "filename_prefix": filename_prefix_var.get(),
+        "save_location": save_location_var.get()
+    }
+    save_config(new_thread_name, current_config)
+
+    # Update combo box options and set the new preset as active
+    thread_menu.configure(values=list_threads())
+    thread_var.set(new_thread_name)
+
+    # Load the new preset to update UI fields accordingly
+    load_thread()
+
+    status_var.set(f"✅ New preset '{new_thread_name}' created and selected.")
+
+
 # 💾 Save and load thread configurations
 def save_thread():
     name = thread_name_var.get().strip()
@@ -206,7 +245,7 @@ def save_thread():
     save_config(name, config)
     thread_menu.configure(values=list_threads())
     thread_menu.set(name)
-    status_var.set(f"✅ Thread '{name}' saved.")
+    status_var.set(f"✅ Preset '{name}' saved.")
 
 def load_thread(event=None):
     name = thread_var.get()
@@ -219,6 +258,12 @@ def load_thread(event=None):
     height_var.set(cfg["height"])
     filename_prefix_var.set(cfg["filename_prefix"])
     save_location_var.set(cfg["save_location"])
+
+######################################################################################
+
+# Max character limit enforcement for Textbox (manual method)
+def limit_input_length(new_text: str) -> bool:
+    return len(new_text) <= CHARACTER_LIMIT  # Limit to input characters
 
 ######################################################################################
 def delete_thread_ui():
@@ -296,16 +341,27 @@ status_var = ctk.StringVar()
 ctk.CTkLabel(root, text=DIG_WEBUI_TOP_PAGE_BANNER, font=ctk.CTkFont(size=18, weight="bold")).pack(pady=10)
 
 prompt_frame = ctk.CTkFrame(root)
-prompt_frame.pack(padx=10, pady=10, fill="x")
+prompt_frame.pack(padx=10, pady=10)
 
 thread_frame = ctk.CTkFrame(prompt_frame)
 thread_frame.pack(pady=3, anchor="center")
 
-ctk.CTkLabel(thread_frame, text="Thread", width=150, anchor="e").pack(side="left")
-ctk.CTkComboBox(thread_frame, variable=thread_var, values=list_threads(), command=load_thread).pack(side="left", padx=(10, 0))
+ctk.CTkLabel(thread_frame, text="Preset", width=150, anchor="e").pack(side="left")
+thread_menu = ctk.CTkComboBox(thread_frame, variable=thread_var, values=list_threads(), command=load_thread)
+thread_menu.pack(side="left", padx=(10, 0))
 
-ctk.CTkLabel(prompt_frame, text="Prompt").pack()
-prompt_entry = ctk.CTkEntry(prompt_frame, textvariable=prompt_var, width=500)
+
+# Register the validation command with the root or any parent widget
+vcmd = prompt_frame.register(limit_input_length)
+
+# Prompt Entry with validation
+prompt_entry = ctk.CTkEntry(
+    prompt_frame,
+    textvariable=prompt_var,
+    width=500,
+    validate="key",  # validate on every keystroke
+    validatecommand=(vcmd, '%P')  # %P = the new text if the edit is allowed
+)
 prompt_entry.pack(pady=4)
 prompt_entry.bind("<Return>", lambda event: generate_image())
 
@@ -369,13 +425,19 @@ ctk.CTkEntry(filename_frame, textvariable=filename_prefix_var, width=180).pack(s
 
 
 
-#ctk.CTkLabel(root, text="Thread").pack()
+#ctk.CTkLabel(root, text="Preset").pack()
 #thread_menu = ctk.CTkComboBox(root, variable=thread_var, values=list_threads(), command=load_thread)
 #thread_menu.pack(pady=4)
 
-ctk.CTkEntry(root, textvariable=thread_name_var, width=200).pack(pady=2)
-ctk.CTkButton(root, text="💾 Save Thread", command=save_thread).pack()
-ctk.CTkButton(root, text="🗑️ Delete Thread", command=delete_thread_ui).pack(pady=2)
+# Button to create new preset (popup)
+btn_new = ctk.CTkButton(root, text="➕ New Preset", command=create_new_preset)
+btn_new.pack(pady=10)
+
+# Button to save preset
+btn_save = ctk.CTkButton(root, text="💾 Update Preset", command=save_thread)
+btn_save.pack(pady=10)
+
+ctk.CTkButton(root, text="🗑️ Delete Preset", command=delete_thread_ui).pack(pady=2)
 
 generate_button = ctk.CTkButton(root, text="Generate Image", command=generate_image)
 generate_button.pack(pady=5)
