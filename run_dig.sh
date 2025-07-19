@@ -9,7 +9,8 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
-RUN='.run_detail_image_gen_installed'
+PYENV_DIR='./.venv'
+RUN='.run_dig_installed'
 
 # No running as root!
 ID=$(id -u)
@@ -42,6 +43,7 @@ EOF
 WEBUI=false
 LOCAL_TK=true
 DEBUG=false
+RUN_POSTFIX='-local'
 
 # 🔍 Parse options
 while getopts ":wldh" opt; do
@@ -49,10 +51,12 @@ while getopts ":wldh" opt; do
     w)
       WEBUI=true
 	  LOCAL_TK=false
+	  RUN_POSTFIX='-webui'
       ;;
     l)
       LOCAL_TK=true
 	  WEBUI=false
+	  RUN_POSTFIX='-local'
       ;;
     d)
       DEBUG=true
@@ -76,16 +80,16 @@ done
 
 
 
-if [ ! -d ./.venv ];then
+if [ ! -d $PYENV_DIR ];then
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=True
         PIP_INSTALL=True
-elif [ -f ./.venv/$RUN ];then
+elif [ -f $PYENV_DIR/$RUN ];then
         echo "✅ Installed... .venv"
         echo "✅ Installed... $RUN"
         ENV_INSTALL=False
         PIP_INSTALL=False
-elif [ ! -f ./.venv/$RUN ];then
+elif [ ! -f $PYENV_DIR/$RUN ];then
 	echo "✅ Installed... .venv"
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=False
@@ -129,10 +133,10 @@ if [ "$ENV_INSTALL" == 'True' ];then
 
 #### Build the Env Box	
 	# 1. Create a virtual environment
-		python3 -m venv ./.venv
+		python3 -m venv $PYENV_DIR
 
 	# 2. Activate it
-		source ./.venv/bin/activate
+		source $PYENV_DIR/bin/activate
 
 	# 3. Update
 		pip install --upgrade pip
@@ -141,7 +145,7 @@ fi
 
 
 if [ "$PIP_INSTALL" == True ];then
-    source ./.venv/bin/activate
+    source $PYENV_DIR/bin/activate
 
 #### Image Generaters
 	# For CUDA 11.8 (check your version: nvidia-smi)
@@ -159,15 +163,19 @@ if [ "$PIP_INSTALL" == True ];then
 	pip install bitsandbytes
 	pip install git+https://github.com/huggingface/huggingface_hub.git
 
-touch .venv/$RUN
+touch $PYENV_DIR/$RUN
 fi
 
 #### Run the Box
-	source ./.venv/bin/activate
+	source $PYENV_DIR/bin/activate
 
 
 if [ $WEBUI == true ]; then
-		pip install gradio # WebUI
+	#### Check dependancies
+            if [ ! -f "$PYENV_DIR/$RUN$RUN_POSTFIX" ];then
+                    pip install gradio  # WebGUI
+                    touch $PYENV_DIR/$RUN$RUN_POSTFIX
+            fi
 	#### Export Variables
 		export PYTHONWARNINGS="ignore"
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -177,14 +185,18 @@ if [ $WEBUI == true ]; then
 		exit 0
 elif [ $LOCAL_TK == true ];then
 	#### Check dependancies
-		APT_LIST=$(apt list 2>/dev/null)
-		if echo "$APT_LIST"|grep python3-tk;then
-			echo "✅ Installed... python3-tk"
-		else
-			echo "⚠️ Installing python3-tk"
-			sudo apt install python3-tk
-		fi
-		pip install pillow  # Icon
+                if [ ! -f "$PYENV_DIR/$RUN$RUN_POSTFIX" ];then
+                    APT_LIST=$(apt list 2>/dev/null)
+                    if echo "$APT_LIST"|grep python3-tk;then
+                            echo "✅ Installed... python3-tk"
+                    else
+                            echo "⚠️ Installing python3-tk"
+                            sudo apt install python3-tk
+                    fi
+                    pip install customtkinter
+                    pip install pillow # Icon
+                    touch $PYENV_DIR/$RUN$RUN_POSTFIX
+                fi
 	#### Export Variables
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 	#### Run the AI
