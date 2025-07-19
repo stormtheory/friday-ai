@@ -166,16 +166,26 @@ def threaded_generate():
             height=height
         ).images[0]
         print("✅ Generation complete")
-
+        
+        # 🧼 Clean image (strip EXIF + auto-orient and Meta Data for safety & display consistency)
+        from PIL import ImageOps
+        clean_image = ImageOps.exif_transpose(result).convert("RGB")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filepath = os.path.join(save_dir, f"{filename_prefix}_{timestamp}.png")
-        result.save(filepath)
+        clean_image.save(filepath)
 
         def update_ui():
             status_var.set(f"✅ Saved: {filepath}")
-            imgtk = ImageTk.PhotoImage(result.convert("RGB").resize((256, 256)))
-            image_label.configure(image=imgtk)
-            image_label.image = imgtk
+            #imgtk = ImageTk.PhotoImage(result.convert("RGB").resize((256, 256)))
+            #image_label.configure(image=imgtk)
+            #image_label.image = imgtk
+            
+            ### After Warning on terminal
+            preview_img = Image.open(filepath).convert("RGB").resize((256, 256))  # or use result directly if already in memory
+            ctk_img = ctk.CTkImage(light_image=preview_img, size=(256, 256))
+            image_label.configure(image=ctk_img)
+            image_label.image = ctk_img
+
             stop_flashing()
             generate_button.configure(state="normal")
 
@@ -320,7 +330,7 @@ ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
 root.title(DIG_WEBUI_TITLE)
-root.geometry("700x1100")
+root.geometry("700x800")
 
 # 🧠 Variables
 prompt_var = ctk.StringVar()
@@ -351,19 +361,26 @@ thread_menu = ctk.CTkComboBox(thread_frame, variable=thread_var, values=list_thr
 thread_menu.pack(side="left", padx=(10, 0))
 
 
-# Register the validation command with the root or any parent widget
+# 🔤 Prompt input row with label and entry
+prompt_row = ctk.CTkFrame(prompt_frame)
+prompt_row.pack(pady=0, anchor="center")
+
+ctk.CTkLabel(prompt_row, text="Prompt", width=150, anchor="e").pack(side="left")
+
+# Register the validation command with the parent frame
 vcmd = prompt_frame.register(limit_input_length)
 
-# Prompt Entry with validation
+# 🧠 Prompt Entry with input length validation
 prompt_entry = ctk.CTkEntry(
-    prompt_frame,
+    prompt_row,
     textvariable=prompt_var,
     width=500,
-    validate="key",  # validate on every keystroke
-    validatecommand=(vcmd, '%P')  # %P = the new text if the edit is allowed
+    validate="key",
+    validatecommand=(vcmd, '%P')
 )
-prompt_entry.pack(pady=4)
+prompt_entry.pack(side="left", padx=(10, 0))
 prompt_entry.bind("<Return>", lambda event: generate_image())
+
 
 status_label = ctk.CTkLabel(prompt_frame, textvariable=status_var, text_color="green")
 status_label.pack()
@@ -371,11 +388,20 @@ status_label.pack()
 
 #############################################################################################
 
+neg_frame = ctk.CTkFrame(root)
+neg_frame.pack(padx=10, pady=10, fill="x")
+
+# 🔤 Negative Prompt input row with left-aligned label
+neg_prompt_row = ctk.CTkFrame(neg_frame)
+neg_prompt_row.pack(pady=4, anchor="center")
+
+ctk.CTkLabel(neg_prompt_row, text="Negative Prompt", width=150, anchor="e").pack(side="left")
+
+ctk.CTkEntry(neg_prompt_row, textvariable=neg_prompt_var, width=500).pack(side="left", padx=(10, 0))
+
+###############################################################################
 advanced_frame = ctk.CTkFrame(root)
 advanced_frame.pack(padx=10, pady=10, fill="x")
-
-ctk.CTkLabel(advanced_frame, text="Negative Prompt").pack()
-ctk.CTkEntry(advanced_frame, textvariable=neg_prompt_var, width=500).pack()
 
 # 🔧 Advanced Inputs
 # Guidance Scale row
@@ -429,15 +455,21 @@ ctk.CTkEntry(filename_frame, textvariable=filename_prefix_var, width=180).pack(s
 #thread_menu = ctk.CTkComboBox(root, variable=thread_var, values=list_threads(), command=load_thread)
 #thread_menu.pack(pady=4)
 
-# Button to create new preset (popup)
-btn_new = ctk.CTkButton(root, text="➕ New Preset", command=create_new_preset)
-btn_new.pack(pady=10)
+# 🧱 Row frame for the three preset buttons
+preset_button_frame = ctk.CTkFrame(root)
+preset_button_frame.pack(pady=10)
 
-# Button to save preset
-btn_save = ctk.CTkButton(root, text="💾 Update Preset", command=save_thread)
-btn_save.pack(pady=10)
+# ➕ New Preset button
+btn_new = ctk.CTkButton(preset_button_frame, text="➕ New Preset", command=create_new_preset)
+btn_new.pack(side="left", padx=5)
 
-ctk.CTkButton(root, text="🗑️ Delete Preset", command=delete_thread_ui).pack(pady=2)
+# 💾 Update Preset button
+btn_save = ctk.CTkButton(preset_button_frame, text="💾 Update Preset", command=save_thread)
+btn_save.pack(side="left", padx=5)
+
+# 🗑️ Delete Preset button
+btn_delete = ctk.CTkButton(preset_button_frame, text="🗑️ Delete Preset", command=delete_thread_ui)
+btn_delete.pack(side="left", padx=5)
 
 generate_button = ctk.CTkButton(root, text="Generate Image", command=generate_image)
 generate_button.pack(pady=5)

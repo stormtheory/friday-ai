@@ -188,10 +188,12 @@ def generate_image(prompt, user_neg_prompt, user_guidance_scale, user_steps, use
         height=height,
         width=width
     ).images[0]
-
+    # 🧼 Clean image (strip EXIF + auto-orient and Meta Data for safety & display consistency)
+    from PIL import ImageOps
+    clean_image = ImageOps.exif_transpose(image).convert("RGB")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(save_dir, f"{filename_prefix}_{timestamp}.png")
-    image.save(filename)
+    clean_image.save(filename)
 
     return image, f"✅ Image saved as {filename}"
 
