@@ -9,7 +9,8 @@ cd "$(dirname "$0")"
 ##### Virtual environment may take up 7Gbs of space for all needed packages.
 ##### Runs the creating and installing of the virtual environment setup one time.
 
-RUN='.run_webui_installed'
+PYENV_DIR='./.venv'
+RUN='.run_chatbot_installed'
 
 # No running as root!
 ID=$(id -u)
@@ -42,22 +43,34 @@ EOF
 # 🔧 Default values
 WEBUI=false
 LOCAL_TK=true
+CHAT_CLI=false
 DEBUG=false
+RUN_POSTFIX='-local'
 
 # 🔍 Parse options
-while getopts ":wldh" opt; do
+while getopts ":wldhc" opt; do
   case ${opt} in
+    c)
+        WEBUI=true
+        LOCAL_TK=false
+        CHAT_CLI=true
+        RUN_POSTFIX='-cli'
+        ;;
     w)
-      WEBUI=true
-	  LOCAL_TK=false
-      ;;
+        WEBUI=true
+        LOCAL_TK=false
+        CHAT_CLI=false
+        RUN_POSTFIX='-webui'
+        ;;
     l)
-      LOCAL_TK=true
-	  WEBUI=false
-      ;;
+        LOCAL_TK=true
+	WEBUI=false
+        CHAT_CLI=false
+        RUN_POSTFIX='-local'
+        ;;
     d)
-      DEBUG=true
-      ;;
+        DEBUG=true
+        ;;
     h)
       show_help
       exit 0
@@ -76,44 +89,44 @@ while getopts ":wldh" opt; do
 done
 
 
-if [ ! -d ./.venv ];then
+if [ ! -d $PYENV_DIR ];then
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=True
         PIP_INSTALL=True
-elif [ -f ./.venv/$RUN ];then
+elif [ -f $PYENV_DIR/$RUN ];then
         echo "✅ Installed... .venv"
         echo "✅ Installed... $RUN"
         ENV_INSTALL=False
         PIP_INSTALL=False
-elif [ ! -f ./.venv/$RUN ];then
+elif [ ! -f $PYENV_DIR/$RUN ];then
 	echo "✅ Installed... .venv"
         APT_LIST=$(apt list 2>/dev/null)
         ENV_INSTALL=False
         PIP_INSTALL=True
 else
-        exit
+        exit 1
 fi
 
 if [ "$ENV_INSTALL" == 'True' ];then
 ### Checking dependencies
         
-        if echo "$APT_LIST"|grep -q python3.12-dev;then
+        if echo "$APT_LIST"|grep python3.12-dev;then
                 echo "✅ Installed... python3.12-dev"
         else
                 echo "⚠️ Installing python3.12-dev"
                 sudo apt install python3.12-dev
         fi
 
-        if echo "$APT_LIST"|grep -q python3.12-venv;then
+        if echo "$APT_LIST"|grep python3.12-venv;then
                 echo "✅ Installed... python3.12-venv"
         else
                 echo "⚠️ Installing python3.12-venv"
                 sudo apt install python3.12-venv
         fi
 
-        if echo "$APT_LIST"|grep -q nvidia-driver;then
+        if echo "$APT_LIST"|grep nvidia-driver;then
                 echo "✅ Installed... nvidia-driver"
-                if echo "$APT_LIST"|grep -q nvidia-cuda-toolkit;then
+                if echo "$APT_LIST"|grep nvidia-cuda-toolkit;then
                         echo "✅ Installed... nvidia-cuda-toolkit"
                 else
                         read -p "⚠️ Install nvidia-cuda-toolkit for Image Gen? [y] > " ANS
@@ -128,10 +141,10 @@ if [ "$ENV_INSTALL" == 'True' ];then
 
 #### Build the Env Box	
 	# 1. Create a virtual environment
-		python3 -m venv ./.venv
+		python3 -m venv $PYENV_DIR
 
 	# 2. Activate it
-		source ./.venv/bin/activate
+		source $PYENV_DIR/bin/activate
 
 	# 3. Update
 		pip install --upgrade pip
@@ -140,16 +153,16 @@ fi
 
 
 if [ "$PIP_INSTALL" == True ];then
-        source ./.venv/bin/activate
+        source $PYENV_DIR/bin/activate
 
-        if echo "$APT_LIST"|grep -q portaudio19-dev;then
+        if echo "$APT_LIST"|grep portaudio19-dev;then
                 echo "✅ Installed... portaudio19-dev"
         else
                 echo "⚠️ Install portaudio19-dev for audio"
                 sudo apt install portaudio19-dev
         fi
 
-        if echo "$APT_LIST"|grep -q festival;then
+        if echo "$APT_LIST"|grep festival;then
                 echo "✅ Installed... festival"
         else
         read -p "⚠️ Install festival for private voice playback? [y] > " ANS
@@ -158,7 +171,7 @@ if [ "$PIP_INSTALL" == True ];then
                 fi
         fi
 
-        if echo "$APT_LIST"|grep -q ffmpeg;then
+        if echo "$APT_LIST"|grep ffmpeg;then
                 echo "✅ Installed... ffmpeg"
         else
                 echo "⚠️ Install ffmpeg for audio playback"
@@ -169,9 +182,9 @@ if [ "$PIP_INSTALL" == True ];then
 	#pip install SpeechRecognition ## Legacy
         #pip install pyaudio  ## Legacy
         #pip install pyttsx3  ## builtin voice ## Robotic
-        pip install sounddevice scipy faster-whisper ## For SpeechRecognation
         #pip install gTTS # Not private from Google
-        #pip install edge-tts # Not private from Google
+        #pip install edge-tts # Not private from Microsoft
+        pip install sounddevice scipy faster-whisper ## For SpeechRecognation
 
 	
 #### Image Generaters
@@ -189,19 +202,30 @@ if [ "$PIP_INSTALL" == True ];then
 	pip install sentence_transformers
 	pip install langchain
 	pip install sentence_transformers
-	pip install faiss-cpu
-	#pip install faiss-gpu
+	pip install faiss-cpu   # Uses the CPU for RAG
+	#pip install faiss-gpu  # Uses the GPU for RAG - Have ran into alot of issues
 
-touch .venv/$RUN
+touch $PYENV_DIR/$RUN
 fi
 
 
 
 #### Run the Box
-        source ./.venv/bin/activate
+        source $PYENV_DIR/bin/activate
 
-if [ $WEBUI == true ]; then
-                pip install gradio  # WebGUI	
+if [ $CHAT_CLI == true ]; then
+        #### Export Variables
+                export PYTHONWARNINGS="ignore"
+        #### Run the AI
+                echo "Starting the AI"
+                python -m cli-main
+                exit 0
+elif [ $WEBUI == true ]; then
+        #### Check dependancies
+                if [ ! -f "$PYENV_DIR/$RUN$RUN_POSTFIX" ];then
+                        pip install gradio  # WebGUI
+                        touch $PYENV_DIR/$RUN$RUN_POSTFIX
+                fi
         #### Export Variables
                 export PYTHONWARNINGS="ignore"
         #### Run the AI
@@ -210,15 +234,18 @@ if [ $WEBUI == true ]; then
                 exit 0
 elif [ $LOCAL_TK == true ];then
 	#### Check dependancies
-		APT_LIST=$(apt list 2>/dev/null)
-		if echo "$APT_LIST"|grep python3-tk;then
-			echo "✅ Installed... python3-tk"
-		else
-			echo "⚠️ Installing python3-tk"
-			sudo apt install python3-tk
-		fi
-                pip install customtkinter
-                pip install pillow # Icon
+                if [ ! -f "$PYENV_DIR/$RUN$RUN_POSTFIX" ];then
+                        APT_LIST=$(apt list 2>/dev/null)
+                        if echo "$APT_LIST"|grep python3-tk;then
+                                echo "✅ Installed... python3-tk"
+                        else
+                                echo "⚠️ Installing python3-tk"
+                                sudo apt install python3-tk
+                        fi
+                        pip install customtkinter
+                        pip install pillow # Icon
+                        touch $PYENV_DIR/$RUN$RUN_POSTFIX
+                fi
 	#### Export Variables
 		export PYTHONWARNINGS="ignore"
 	#### Run the AI
