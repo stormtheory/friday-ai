@@ -5,14 +5,19 @@ F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under t
 Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home — no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
 
 # In the Works:
+Guiding Principle(s):
 - As always: Fighting to keep this AI free, private, opensource, fast, and easy (in that order).
-- Updating screenshots.
-- Adding more features to the new Local Tkinter Chatbot.
+
+Short-term:
 - Porting Local Tkinter DIG to customtkinter like Chatbot.
 - Making a chat bot that can tell a story while making illustrations with the image generator.
+- Add debug and reduce output.
+
+Long-term:
 - Getting a Female Voice (Running into privacy issues) Did this with gTTS but AI responses were being routed to Google and others to Microsoft.
 
 Upon Request:
+- Adding audio record Local Tkinter Chatbot.
 - Add YUM support.
 - Add AMD support.
 
