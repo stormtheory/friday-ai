@@ -8,7 +8,7 @@ import gc
 
 import customtkinter as ctk
 from tkinter import filedialog
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageTk
 
 from config import (
     DIG_DEFAULT_PROMPT,
@@ -19,6 +19,13 @@ from config import (
     DIG_PICTURE_GUIDANCE_SCALE,
     DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
 )
+
+# --- Globals ---
+uploaded_image = None
+uploaded_path = None
+last_output_path = None  # 🧠 Track last saved image for deletion
+ICON_PATH = "assets/I2I_icon.png"
+
 
 # 🧠 Set PyTorch env early for CUDA memory fragmentation control
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -34,8 +41,8 @@ ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
-root.title("🧠 AI Image-to-Image Generator")
-root.geometry("1200x800")
+root.title("AI Image-to-Image (I2I) Generator")
+root.geometry("900x800")
 
 # 🧠 Load stable diffusion XL img2img pipeline
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
@@ -59,6 +66,7 @@ uploaded_image = None
 uploaded_path = None
 
 image_metadata_var = ctk.StringVar(value="No image loaded")
+status_bar_var = ctk.StringVar(value="Status: Idle")
 prompt_var = ctk.StringVar(value=DIG_DEFAULT_PROMPT)
 neg_prompt_var = ctk.StringVar(value=DIG_PICTURE_NEG_PROMPT)
 width_var = ctk.StringVar(value=str(DIG_PICTURE_WIDTH))
@@ -86,13 +94,32 @@ def upload_image():
         input_img_label.image = img_preview
         image_metadata_var.set(f"{uploaded_image.width}x{uploaded_image.height} | {uploaded_image.format}")
     except Exception as e:
-        image_metadata_var.set(f"⚠️ Error loading image: {e}")
+        status_bar_var.set(f"⚠️ Error loading image: {e}")
+
+def delete_last_output():
+    global last_output_path
+    if last_output_path and os.path.isfile(last_output_path):
+        try:
+            os.remove(last_output_path)
+            status_bar_var.set(f"🗑 Deleted: {os.path.basename(last_output_path)}")
+            last_output_path = None  # 🧠 Clear saved reference
+            output_img_label.configure(image="", text="")  # Clear preview
+        except Exception as e:
+            status_bar_var.set(f"❌ Delete error: {e}")
+    else:
+        status_bar_var.set("⚠️ No saved image to delete.")
+
 
 # --- Generate Image ---
 def run_generation():
+    global last_output_path
+    last_output_path = ""
+    status_bar_var.set(f"🤔 Thinking...")
+    root.update_idletasks()
+    
     global uploaded_image
     if uploaded_image is None:
-        image_metadata_var.set("⚠️ No image to transform.")
+        status_bar_var.set("⚠️ No image to transform.")
         return
     try:
         torch.cuda.empty_cache()
@@ -105,10 +132,10 @@ def run_generation():
         width = int(width_var.get() or DIG_PICTURE_WIDTH)
         height = int(height_var.get() or DIG_PICTURE_HEIGHT)
         strength = float(strength_var.get() or 0.7)
-
+            
         # Resize uploaded image to requested dimensions
         init_image = uploaded_image.resize((width, height))
-
+        
         # Run img2img generation
         result = pipe(
             prompt=prompt,
@@ -121,7 +148,7 @@ def run_generation():
 
         # Clean image metadata and convert to RGB
         result_rgb = ImageOps.exif_transpose(result).convert("RGB")
-
+        
         # Show preview scaled down
         preview = result_rgb.resize((256, 256))
         out_img = ctk.CTkImage(light_image=preview, size=(256, 256))
@@ -134,11 +161,13 @@ def run_generation():
         os.makedirs(save_dir, exist_ok=True)
         out_path = os.path.join(save_dir, f"generated_{timestamp}.png")
         result_rgb.save(out_path)
+        last_output_path = out_path  # 🧠 Save reference to last output path
 
-        image_metadata_var.set(f"✅ Saved: {os.path.basename(out_path)}")
+        status_bar_var.set(f"✅ Saved: {os.path.basename(out_path)}")
+        root.update_idletasks()
 
     except Exception as e:
-        image_metadata_var.set(f"❌ Generation error: {str(e)}")
+        status_bar_var.set(f"❌ Generation error: {str(e)}")
 
 # --- UI Building ---
 
@@ -153,10 +182,12 @@ left_panel = ctk.CTkFrame(display_frame)
 left_panel.pack(side="left", padx=10)
 
 ctk.CTkLabel(left_panel, text="Current Image", font=ctk.CTkFont(size=16)).pack(pady=(0, 10))
-input_img_label = ctk.CTkLabel(left_panel, width=256, height=256)
+input_img_label = ctk.CTkLabel(left_panel, text="", width=256, height=256)
 input_img_label.pack()
 
-ctk.CTkLabel(left_panel, textvariable=image_metadata_var, font=ctk.CTkFont(size=12)).pack(pady=10)
+ctk.CTkLabel(left_panel, textvariable=image_metadata_var, font=ctk.CTkFont(size=12)).pack(pady=3)
+ctk.CTkLabel(left_panel, textvariable=status_bar_var, font=ctk.CTkFont(size=12)).pack(pady=3)
+
 
 upload_btn = ctk.CTkButton(left_panel, text="📤 Upload Image", command=upload_image)
 upload_btn.pack(pady=5)
@@ -169,7 +200,7 @@ right_panel = ctk.CTkFrame(display_frame)
 right_panel.pack(side="left", padx=10)
 
 ctk.CTkLabel(right_panel, text="Transformed Image", font=ctk.CTkFont(size=16)).pack(pady=(0, 10))
-output_img_label = ctk.CTkLabel(right_panel, width=256, height=256)
+output_img_label = ctk.CTkLabel(right_panel, text="", width=256, height=256)
 output_img_label.pack()
 
 options_frame = ctk.CTkFrame(right_panel)
@@ -187,21 +218,46 @@ create_option_row(options_frame, "Guidance Scale", guidance_scale_var)
 create_option_row(options_frame, "Steps", steps_var)
 create_option_row(options_frame, "Strength", strength_var)
 
+# 🗑 Add delete button below strength
+delete_btn = ctk.CTkButton(
+    options_frame,
+    text="🗑 Delete Last Output",
+    command=delete_last_output,
+    fg_color="#b22222",  # firebrick red
+    hover_color="#8b0000"
+)
+delete_btn.pack(pady=(10, 0))
+
+
 # Prompt section
 prompt_section = ctk.CTkFrame(main_frame)
 prompt_section.pack(fill="x", pady=10)
 
 prompt_row = ctk.CTkFrame(prompt_section)
-prompt_row.pack(pady=2)
-ctk.CTkLabel(prompt_row, text="Prompt", width=120, anchor="e").pack(side="left")
-ctk.CTkEntry(prompt_row, textvariable=prompt_var, width=600).pack(side="left", padx=5)
+prompt_row.pack(pady=2, anchor='w')
+ctk.CTkLabel(prompt_row, text="Prompt", width=110, anchor="e").pack(side="left")
+prompt_entry = ctk.CTkEntry(prompt_row, textvariable=prompt_var, width=800)
+prompt_entry.pack(side="left", padx=5)
+# ⌨️ Bind Enter key to trigger image generation
+prompt_entry.bind("<Return>", lambda event: run_generation())
+
 
 neg_row = ctk.CTkFrame(prompt_section)
-neg_row.pack(pady=2)
-ctk.CTkLabel(neg_row, text="Negative Prompt", width=120, anchor="e").pack(side="left")
-ctk.CTkEntry(neg_row, textvariable=neg_prompt_var, width=600).pack(side="left", padx=5)
+neg_row.pack(pady=2, anchor='w')
+ctk.CTkLabel(neg_row, text="Negative Prompt", width=110, anchor="e").pack(side="left")
+neg_entry = ctk.CTkEntry(neg_row, textvariable=neg_prompt_var, width=800)
+neg_entry.pack(side="left", padx=5)
+neg_entry.bind("<Return>", lambda event: run_generation())
 
 generate_btn = ctk.CTkButton(main_frame, text="🚀 Transform", width=120, command=run_generation)
 generate_btn.pack(pady=10)
+
+# 🖼️ Icon
+if os.path.exists(ICON_PATH):
+    try:
+        icon_img = ImageTk.PhotoImage(Image.open(ICON_PATH))
+        root.iconphoto(True, icon_img)
+    except Exception as e:
+        print(f"⚠️ Failed to set window icon: {e}")
 
 root.mainloop()

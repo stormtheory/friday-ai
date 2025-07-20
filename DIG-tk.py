@@ -1,21 +1,25 @@
 # Written by StormTheory
 
 import customtkinter as ctk
-from tkinter import filedialog, messagebox, simpledialog
-from tkinter import ttk
+from tkinter import messagebox, simpledialog
 from PIL import ImageTk, Image
 from datetime import datetime
 import torch
-import getpass
 import os
 import json
 import re
 import gc
 import threading
-from accelerate import PartialState
+
+# --- Globals ---
+uploaded_image = None
+uploaded_path = None
+last_output_path = None  # 🧠 Track last saved image for deletion
 
 MAX_TOKEN = 77
 CHARACTER_LIMIT = MAX_TOKEN * 3
+
+ICON_PATH = "assets/DIG_icon.png"
 
 # ⚙️ Memory management environment
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -48,10 +52,21 @@ from config import (
     DIG_WEBUI_THREAD_DATA_DIR
 )
 
-ICON_PATH = "assets/DIG_icon.png"
-
 def sanitize_filename(name):
     return re.sub(r"[^a-zA-Z0-9_\-]", "_", name)
+
+def delete_last_output():
+    global last_output_path
+    if last_output_path and os.path.isfile(last_output_path):
+        try:
+            os.remove(last_output_path)
+            status_var.set(f"🗑 Deleted: {os.path.basename(last_output_path)}")
+            last_output_path = None  # 🧠 Clear saved reference
+            image_label.configure(image="", text="")  # Clear preview
+        except Exception as e:
+            status_var.set(f"❌ Delete error: {e}")
+    else:
+        status_var.set("⚠️ No saved image to delete.")
 
 DEFAULT_THREAD_NAME = "Default"
 os.makedirs(DIG_WEBUI_THREAD_DATA_DIR, exist_ok=True)
@@ -142,6 +157,8 @@ def generate_image():
     threading.Thread(target=threaded_generate, daemon=True).start()
 
 def threaded_generate():
+    global last_output_path
+    last_output_path = ""
     print("🧵 Preset started")
     try:
         torch.cuda.empty_cache()
@@ -179,6 +196,7 @@ def threaded_generate():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filepath = os.path.join(save_dir, f"{filename_prefix}_{timestamp}.png")
         clean_image.save(filepath)
+        last_output_path = filepath  # 🧠 Save reference to last output path
 
         def update_ui():
             status_var.set(f"✅ Saved: {filepath}")
@@ -336,7 +354,7 @@ ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
 root.title(DIG_WEBUI_TITLE)
-root.geometry("700x800")
+root.geometry("700x825")
 
 # 🧠 Variables
 prompt_var = ctk.StringVar()
@@ -482,6 +500,16 @@ generate_button.pack(pady=5)
 
 image_label = ctk.CTkLabel(root, text="")
 image_label.pack()
+
+# 🗑 Add delete button below strength
+delete_btn = ctk.CTkButton(
+    root,
+    text="🗑 Delete Last Output",
+    command=delete_last_output,
+    fg_color="#b22222",  # firebrick red
+    hover_color="#8b0000"
+)
+delete_btn.pack(pady=(10, 0))
 
 # 🖼️ Icon
 if os.path.exists(ICON_PATH):
