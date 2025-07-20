@@ -8,7 +8,7 @@ import gc
 
 import customtkinter as ctk
 from tkinter import filedialog
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageTk
 
 from config import (
     DIG_DEFAULT_PROMPT,
@@ -24,6 +24,7 @@ from config import (
 uploaded_image = None
 uploaded_path = None
 last_output_path = None  # 🧠 Track last saved image for deletion
+ICON_PATH = "assets/I2I_icon.png"
 
 
 # 🧠 Set PyTorch env early for CUDA memory fragmentation control
@@ -40,7 +41,7 @@ ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
-root.title("🧠 AI Image-to-Image Generator")
+root.title("AI Image-to-Image (I2I) Generator")
 root.geometry("900x800")
 
 # 🧠 Load stable diffusion XL img2img pipeline
@@ -102,7 +103,7 @@ def delete_last_output():
             os.remove(last_output_path)
             status_bar_var.set(f"🗑 Deleted: {os.path.basename(last_output_path)}")
             last_output_path = None  # 🧠 Clear saved reference
-            output_img_label.configure(image=None, text="")  # Clear preview
+            output_img_label.configure(image="", text="")  # Clear preview
         except Exception as e:
             status_bar_var.set(f"❌ Delete error: {e}")
     else:
@@ -248,8 +249,15 @@ neg_entry = ctk.CTkEntry(neg_row, textvariable=neg_prompt_var, width=800)
 neg_entry.pack(side="left", padx=5)
 neg_entry.bind("<Return>", lambda event: run_generation())
 
-
 generate_btn = ctk.CTkButton(main_frame, text="🚀 Transform", width=120, command=run_generation)
 generate_btn.pack(pady=10)
+
+# 🖼️ Icon
+if os.path.exists(ICON_PATH):
+    try:
+        icon_img = ImageTk.PhotoImage(Image.open(ICON_PATH))
+        root.iconphoto(True, icon_img)
+    except Exception as e:
+        print(f"⚠️ Failed to set window icon: {e}")
 
 root.mainloop()
