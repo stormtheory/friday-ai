@@ -218,7 +218,7 @@ if [ $CHAT_CLI == true ]; then
                 export PYTHONWARNINGS="ignore"
         #### Run the AI
                 echo "Starting the AI"
-                python -m cli-main
+                python3 -m cli-main
                 exit 0
 elif [ $WEBUI == true ]; then
         #### Check dependancies
@@ -230,7 +230,7 @@ elif [ $WEBUI == true ]; then
                 export PYTHONWARNINGS="ignore"
         #### Run the AI
                 echo "Starting the AI"
-                python -m chatbot-webui
+                python3 -m chatbot-webui
                 exit 0
 elif [ $LOCAL_TK == true ];then
 	#### Check dependancies
@@ -250,7 +250,7 @@ elif [ $LOCAL_TK == true ];then
 		export PYTHONWARNINGS="ignore"
 	#### Run the AI
 		echo "Starting the AI"
-		python -m chatbot-local
+		python3 -m chatbot-local
 		exit 0
 fi
 echo "ERROR!"

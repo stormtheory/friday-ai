@@ -9,6 +9,7 @@ from datetime import datetime
 from diffusers import StableDiffusionPipeline
 import getpass
 from config import IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION
+from PIL import ImageOps
 
 username = getpass.getuser()
 
@@ -31,7 +32,9 @@ def generate_image(prompt: str, output_dir=f"/home/{username}/{IMAGE_GEN_IMAGE_S
     print(f"🧠 Generating image from prompt: '{prompt}'")
     result = pipe(prompt)
     image = result.images[0]
-    image.save(output_path)
+    # 🧼 Clean image (strip EXIF + auto-orient and Meta Data for safety & display consistency)
+    clean_image = ImageOps.exif_transpose(image).convert("RGB")
+    clean_image.save(output_path)
     
     abs_path = os.path.abspath(output_path)
     print(f"✅ Image saved: {abs_path}")

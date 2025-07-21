@@ -68,6 +68,20 @@ def delete_last_output():
     else:
         status_var.set("⚠️ No saved image to delete.")
 
+def delete_regen():
+    global last_output_path
+    if last_output_path and os.path.isfile(last_output_path):
+        try:
+            os.remove(last_output_path)
+            status_var.set(f"🗑 Deleted: {os.path.basename(last_output_path)}")
+            last_output_path = None  # 🧠 Clear saved reference
+            image_label.configure(image="", text="")  # Clear preview
+        except Exception as e:
+            status_var.set(f"❌ Delete error: {e}")
+    else:
+        status_var.set("⚠️ No saved image to delete.")
+    generate_image()
+
 DEFAULT_THREAD_NAME = "Default"
 os.makedirs(DIG_WEBUI_THREAD_DATA_DIR, exist_ok=True)
 
@@ -354,7 +368,7 @@ ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
 root.title(DIG_WEBUI_TITLE)
-root.geometry("700x825")
+root.geometry("700x870")
 
 # 🧠 Variables
 prompt_var = ctk.StringVar()
@@ -510,6 +524,16 @@ delete_btn = ctk.CTkButton(
     hover_color="#8b0000"
 )
 delete_btn.pack(pady=(10, 0))
+
+# 🗑 Add delete and Regen button below strength
+delete_regen_btn = ctk.CTkButton(
+    root,
+    text="🗑 Delete & 🔄 Regenerate",
+    command=delete_regen,
+    fg_color="#b22222",  # firebrick red
+    hover_color="#8b0000"
+)
+delete_regen_btn.pack(pady=(10, 0))
 
 # 🖼️ Icon
 if os.path.exists(ICON_PATH):

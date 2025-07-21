@@ -190,7 +190,7 @@ if [ $WEBUI == true ]; then
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 	#### Run the AI
 		echo "Starting the Detailed Image Gen (DIG) WebUI"
-		python -m DIG-webUI
+		python3 -m DIG-webUI
 		exit 0
 elif [ $LOCAL_TK == true ];then
 	#### Check dependancies
@@ -210,7 +210,7 @@ elif [ $LOCAL_TK == true ];then
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 	#### Run the AI
 		echo "Starting the Detailed Image Gen (DIG) Tinkter"
-		python -m DIG-tk
+		python3 -m DIG-tk
 		exit 0
 elif [ $RUN_I2I == true ];then
 	#### Check dependancies
@@ -230,7 +230,7 @@ elif [ $RUN_I2I == true ];then
 		export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 	#### Run the AI
 		echo "Starting the Image to Image Gen (I2I) Tinkter"
-		python -m img2img-transformer
+		python3 -m img2img-transformer
 		exit 0
 fi
 echo "ERROR!"
