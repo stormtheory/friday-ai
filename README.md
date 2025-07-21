@@ -4,12 +4,42 @@ F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under t
 
 Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home — no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
 
+# Image Screenshots:
+## Flagship Products
+### Chatbot Local Window App
+<img width="960" height="748" alt="Image" src="https://github.com/user-attachments/assets/820f13e3-5f78-4cc2-a1ba-72de8642f711" />
+
+### Detailed Image Generator (DIG) Local
+<img width="700" height="898" alt="Image" src="https://github.com/user-attachments/assets/860d3dae-d697-49f5-8742-ff35baaafc84" />
+
+### Image to Image Generator (I2I) Local
+<img width="900" height="828" alt="Image" src="https://github.com/user-attachments/assets/b241580d-0e9e-4f55-a191-eca635b375e1" />
+
+
 # In the Works:
 Guiding Principle(s):
 - As always: Fighting to keep this AI free, private, opensource, fast, and easy (in that order).
 
+### Ultimate Goals
+- A free, private, fast, and easy in home AI that can do tasks outside of just being a chatbot.
+- Change the temperature in the home, set calender events, hold a complex conversation, set reminders, along with many other features and tasks we see in AI apps now.
+- Integrate into a smart speaker but 100% private and free.
+- A home/small business(watch your licensing) network monitor and defender.
+
+### Roadmap
+[✔] Started: July 2025
+[✔] ChatBot
+[✔] Image Generator (DIG)
+[✔] Image to Image Generator (I2I)
+[ ] Storyteller
+[ ] Taking a model to use it to run commands on your computer in a sandboxed environment.
+[ ] Home automation
+[ ] Building Friday's own LLM model
+[ ] Training Friday's own LLM model
+[ ] Fine tuning Friday's own LLM model
+
+### Goals
 Short-term:
-- Porting Local Tkinter DIG to customtkinter like Chatbot.
 - Making a chat bot that can tell a story while making illustrations with the image generator.
 - Add debug and reduce output.
 
@@ -20,12 +50,6 @@ Upon Request:
 - Adding audio record Local Tkinter Chatbot.
 - Add YUM support.
 - Add AMD support.
-
-# Ultimate Goals
-- A free, private, fast, and easy in home AI that can do tasks outside of just being a chatbot.
-- Change the temperature in the home, set calender events, hold a complex conversation, set reminders, along with many other features and tasks we see in AI apps now.
-- Integrate into a smart speaker but 100% private and free.
-- A home/small business(watch your licensing) network monitor and defender.
 
 # System Requirements:
 - Ubuntu/Mint is only tested to be supported.
@@ -120,18 +144,18 @@ By default the webUI after ran can be found by running this command:
  	
   	firefox http://127.0.0.1:7860
 
-# Image Screenshots:
-### Chatbot Local Window App
-<img width="960" height="748" alt="Image" src="https://github.com/user-attachments/assets/820f13e3-5f78-4cc2-a1ba-72de8642f711" />
+# More Image Screenshots:
+### Command Line Interface (CLI)
+<img width="958" height="224" alt="Image" src="https://github.com/user-attachments/assets/cda0f84b-b81d-48dd-a337-e8c6ec7dec40" />
 
+
+## Local Web Browser Based
 ### Detailed Image Generator Local webUI
 <img width="774" height="791" alt="Image" src="https://github.com/user-attachments/assets/002a07aa-40cf-44e8-8d79-16766abfc461" />
 
 #### Just the 'Advanced Settings'
 <img width="987" height="366" alt="Image" src="https://github.com/user-attachments/assets/b2d88abb-d707-4eac-bf73-83c8560a772b" />
 
-## friday_cli
-<img width="958" height="224" alt="Image" src="https://github.com/user-attachments/assets/cda0f84b-b81d-48dd-a337-e8c6ec7dec40" />
 
 ## friday_local_webUI
 <img width="1494" height="886" alt="Image" src="https://github.com/user-attachments/assets/54f8d17f-bc45-44ff-9318-8ace9d07f1fc" />
