@@ -179,7 +179,13 @@ fi
 
 if [ "$PIP_INSTALL" == True ];then
         source $PYENV_DIR/bin/activate
-
+        
+        if echo "$APT_LIST"|grep cmake;then
+                echo "✅ Installed... cmake"
+        else
+                echo "⚠️ Install cmake for compiling for audio/voice libs"
+                sudo apt install cmake
+        fi
         if echo "$APT_LIST"|grep portaudio19-dev;then
                 echo "✅ Installed... portaudio19-dev"
         else
@@ -209,7 +215,7 @@ if [ "$PIP_INSTALL" == True ];then
         #pip install pyttsx3  ## builtin voice ## Robotic
         #pip install gTTS # Not private from Google
         #pip install edge-tts # Not private from Microsoft
-        pip install sounddevice scipy faster-whisper ## For SpeechRecognation
+        pip install sounddevice scipy faster-whisper ## For SpeechRecognation and Audio
 
 	
 #### Image Generaters
