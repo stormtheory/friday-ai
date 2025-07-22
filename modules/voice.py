@@ -9,7 +9,6 @@ import sounddevice as sd
 import numpy as np
 from scipy.io.wavfile import write
 import subprocess
-from gtts import gTTS
 from datetime import datetime
 from config import ENABLE_SPEECH_OUTPUT
 from modules.speech_state import SpeechState
