@@ -4,6 +4,8 @@ F.R.I.D.A.Y. is a lightweight, self-hosted AI environment I’m building under t
 
 Created for ease of use and respect for your data, F.R.I.D.A.Y. runs entirely from home — no cloud, no tracking, no compromise—just a fast, private AI that works for you, not on you.
 
+Report all problems/issues/sugeestions to https://github.com/stormtheory/friday-ai/issues
+
 # Image Screenshots:
 ## Flagship Products
 ### Chatbot Local Window App
@@ -27,16 +29,16 @@ Guiding Principle(s):
 - A home/small business(watch your licensing) network monitor and defender.
 
 ### Roadmap
-[✔] Started: July 2025
-[✔] ChatBot
-[✔] Image Generator (DIG)
-[✔] Image to Image Generator (I2I)
-[ ] Storyteller
-[ ] Taking a model to use it to run commands on your computer in a sandboxed environment.
-[ ] Home automation
-[ ] Building Friday's own LLM model
-[ ] Training Friday's own LLM model
-[ ] Fine tuning Friday's own LLM model
+- [✔] Started: July 2025
+- [✔] ChatBot
+- [✔] Image Generator (DIG)
+- [✔] Image to Image Generator (I2I)
+- [ ] Storyteller
+- [ ] Taking a model to use it to run commands on your computer in a sandboxed environment.
+- [ ] Home automation
+- [ ] Building Friday's own LLM model
+- [ ] Training Friday's own LLM model
+- [ ] Fine tuning Friday's own LLM model
 
 ### Goals
 Short-term:

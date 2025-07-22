@@ -19,6 +19,36 @@ if [ "$ID" == '0'  ];then
         exit
 fi
 
+
+# CAN ONLY BE ONE!!!!
+APP='dig'
+RAM_DIR='/dev/shm'
+BASENAME=$(basename $0)
+RAM_FILE="${RAM_DIR}/${APP}-${BASENAME}.lock"
+fs_type=$(stat -f -c %T "$RAM_DIR")
+if [ -d $RAM_DIR ];then
+        if [[ "$fs_type" == "tmpfs" ]] || [[ "$fs_type" == "ramfs" ]]; then
+                if [ -f $RAM_FILE ]; then
+                echo "RAM lock file exists: $RAM_FILE"
+                exit
+                else
+                        touch $RAM_FILE
+                        chmod 600 $RAM_FILE
+                        # Cleanup on exit
+                        trap 'rm -f "$RAM_FILE"; echo "[*] Lock released."; exit' INT TERM EXIT
+                fi
+        else
+                echo "[-] '$RAM_DIR' is NOT on a RAM disk (type: $fs_type)"
+        fi
+else
+        echo "ERROR: $RAM_DIR not present to lock app."
+fi
+
+
+
+
+
+
 # 🛡️ Set safe defaults
 set -euo pipefail
 IFS=$'\n\t'
