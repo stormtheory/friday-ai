@@ -49,7 +49,8 @@ from config import (
     DIG_PICTURE_WIDTH,
     DIG_PICTURE_NEG_PROMPT,
     DIG_PICTURE_GUIDANCE_SCALE,
-    DIG_WEBUI_THREAD_DATA_DIR
+    DIG_WEBUI_THREAD_DATA_DIR,
+    DIG_DEFAULT_GEN_LOOP_TIMES
 )
 
 def sanitize_filename(name):
@@ -166,76 +167,94 @@ def stop_flashing():
 
 # 🔄 Generation thread logic
 def generate_image():
+    gen_times = int(gen_loop_times.get().strip() or DIG_DEFAULT_GEN_LOOP_TIMES)
+    ALLOWED_LOOPS = 10
+    if gen_times >= ALLOWED_LOOPS:
+        status_var.set(f"❌ Gen Loop Times set to over {ALLOWED_LOOPS}.")
+        return
     generate_button.configure(state="disabled")
     start_flashing()
     threading.Thread(target=threaded_generate, daemon=True).start()
 
 def threaded_generate():
-    global last_output_path
-    last_output_path = ""
-    print("🧵 Preset started")
-    try:
-        torch.cuda.empty_cache()
+    STOP_GEN = False
+    i = 1
+    gen_times = int(gen_loop_times.get().strip() or DIG_DEFAULT_GEN_LOOP_TIMES)
+    while not STOP_GEN and i <= gen_times:
+        global last_output_path
+        last_output_path = ""
+        print("🧵 Preset started")
+        try:
+            torch.cuda.empty_cache()
 
-        prompt = prompt_var.get().strip() or DEFAULT_PROMPT
-        neg_prompt = neg_prompt_var.get().strip() or DIG_PICTURE_NEG_PROMPT
-        gs = float(guidance_scale_var.get() or DIG_PICTURE_GUIDANCE_SCALE)
-        steps = int(steps_var.get() or DIG_PICTURE_NUM_INFERENCE_STEPS)
-        width = int(width_var.get() or DIG_PICTURE_WIDTH)
-        height = int(height_var.get() or DIG_PICTURE_HEIGHT)
-        filename_prefix = filename_prefix_var.get().strip() or DIG_WEBUI_FILENAME
-        save_loc = save_location_var.get().strip() or DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
+            prompt = prompt_var.get().strip() or DEFAULT_PROMPT
+            neg_prompt = neg_prompt_var.get().strip() or DIG_PICTURE_NEG_PROMPT
+            gs = float(guidance_scale_var.get() or DIG_PICTURE_GUIDANCE_SCALE)
+            steps = int(steps_var.get() or DIG_PICTURE_NUM_INFERENCE_STEPS)
+            width = int(width_var.get() or DIG_PICTURE_WIDTH)
+            height = int(height_var.get() or DIG_PICTURE_HEIGHT)
+            filename_prefix = filename_prefix_var.get().strip() or DIG_WEBUI_FILENAME
+            save_loc = save_location_var.get().strip() or DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
 
-        # 📏 Validate image dimensions
-        if width % 8 != 0 or height % 8 != 0:
-            raise ValueError("❌ Width and Height must be divisible by 8.")
+            # 📏 Validate image dimensions
+            if width % 8 != 0 or height % 8 != 0:
+                raise ValueError("❌ Width and Height must be divisible by 8.")
 
-        save_dir = os.path.expanduser(f"~/{save_loc}")
-        os.makedirs(save_dir, exist_ok=True)
+            save_dir = os.path.expanduser(f"~/{save_loc}")
+            os.makedirs(save_dir, exist_ok=True)
 
-        print(f"🧠 Generating: {prompt}")
-        result = pipe(
-            prompt=prompt,
-            negative_prompt=neg_prompt,
-            guidance_scale=gs,
-            num_inference_steps=steps,
-            width=width,
-            height=height
-        ).images[0]
-        print("✅ Generation complete")
-        
-        # 🧼 Clean image (strip EXIF + auto-orient and Meta Data for safety & display consistency)
-        from PIL import ImageOps
-        clean_image = ImageOps.exif_transpose(result).convert("RGB")
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filepath = os.path.join(save_dir, f"{filename_prefix}_{timestamp}.png")
-        clean_image.save(filepath)
-        last_output_path = filepath  # 🧠 Save reference to last output path
-
-        def update_ui():
-            status_var.set(f"✅ Saved: {filepath}")
-            #imgtk = ImageTk.PhotoImage(result.convert("RGB").resize((256, 256)))
-            #image_label.configure(image=imgtk)
-            #image_label.image = imgtk
+            print(f"🧠 Generating: {prompt}")
+            result = pipe(
+                prompt=prompt,
+                negative_prompt=neg_prompt,
+                guidance_scale=gs,
+                num_inference_steps=steps,
+                width=width,
+                height=height
+            ).images[0]
+            print("✅ Generation complete")
             
-            ### After Warning on terminal
-            preview_img = Image.open(filepath).convert("RGB").resize((256, 256))  # or use result directly if already in memory
-            ctk_img = ctk.CTkImage(light_image=preview_img, size=(256, 256))
-            image_label.configure(image=ctk_img)
-            image_label.image = ctk_img
+            # 🧼 Clean image (strip EXIF + auto-orient and Meta Data for safety & display consistency)
+            from PIL import ImageOps
+            clean_image = ImageOps.exif_transpose(result).convert("RGB")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filepath = os.path.join(save_dir, f"{filename_prefix}_{timestamp}.png")
+            clean_image.save(filepath)
+            last_output_path = filepath  # 🧠 Save reference to last output path
 
-            stop_flashing()
-            generate_button.configure(state="normal")
+            def update_ui():
+                if gen_times > 1:
+                    status_var.set(f"✅ Saved & Gen {i} of {gen_times}: {filepath}")
+                else:
+                    status_var.set(f"✅ Saved: {filepath}")
+                #imgtk = ImageTk.PhotoImage(result.convert("RGB").resize((256, 256)))
+                #image_label.configure(image=imgtk)
+                #image_label.image = imgtk
+                
+                ### After Warning on terminal
+                preview_img = Image.open(filepath).convert("RGB").resize((256, 256))  # or use result directly if already in memory
+                ctk_img = ctk.CTkImage(light_image=preview_img, size=(256, 256))
+                image_label.configure(image=ctk_img)
+                image_label.image = ctk_img
 
-        root.after(0, update_ui)
+                stop_flashing()
+                generate_button.configure(state="normal")
 
-    except Exception as e:
-        print(f"❌ Exception: {e}")
-        root.after(0, lambda e=e: (
-            status_var.set(f"❌ Error: {str(e)}"),
-            stop_flashing(),
-            generate_button.configure(state="normal")
-        ))
+            if gen_times > 1:
+                update_ui()
+            else:
+                root.after(0, update_ui)
+            
+        except Exception as e:
+            print(f"❌ Exception: {e}")
+            root.after(0, lambda e=e: (
+                status_var.set(f"❌ Error: {str(e)}"),
+                stop_flashing(),
+                generate_button.configure(state="normal")
+            ))
+        i += 1
+    
+###################################################################################################
 
 
 def create_new_preset():
@@ -271,7 +290,7 @@ def create_new_preset():
     load_thread()
 
     status_var.set(f"✅ New preset '{new_thread_name}' created and selected.")
-
+    
 
 # 💾 Save and load thread configurations
 def update_thread():
@@ -303,6 +322,7 @@ def load_thread(event=None):
     guidance_scale_var.set(cfg["guidance_scale"])
     steps_var.set(cfg["steps"])
     width_var.set(cfg["width"])
+    gen_loop_times.set(DIG_DEFAULT_GEN_LOOP_TIMES)
     height_var.set(cfg["height"])
     filename_prefix_var.set(cfg["filename_prefix"])
     save_location_var.set(cfg["save_location"])
@@ -368,7 +388,7 @@ ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
 root.title(DIG_WEBUI_TITLE)
-root.geometry("700x870")
+root.geometry("700x900")
 
 # 🧠 Variables
 prompt_var = ctk.StringVar()
@@ -377,6 +397,7 @@ guidance_scale_var = ctk.StringVar(value=str(DIG_PICTURE_GUIDANCE_SCALE))
 steps_var = ctk.StringVar(value=str(DIG_PICTURE_NUM_INFERENCE_STEPS))
 width_var = ctk.StringVar(value=str(DIG_PICTURE_WIDTH))
 height_var = ctk.StringVar(value=str(DIG_PICTURE_HEIGHT))
+gen_loop_times = ctk.StringVar(value=str(DIG_DEFAULT_GEN_LOOP_TIMES))
 filename_prefix_var = ctk.StringVar(value=DIG_WEBUI_FILENAME)
 save_location_var = ctk.StringVar(value=DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION)
 thread_name_var = ctk.StringVar()
@@ -442,6 +463,18 @@ advanced_frame = ctk.CTkFrame(root)
 advanced_frame.pack(padx=10, pady=10, fill="x")
 
 # 🔧 Advanced Inputs
+
+#############################################################################################
+
+# Gen Loop
+gen_times_frame = ctk.CTkFrame(advanced_frame)
+gen_times_frame.pack(pady=3, anchor="center")
+
+ctk.CTkLabel(gen_times_frame, text="Gen Loop Times [1-10]", width=150, anchor="e").pack(side="left")
+ctk.CTkEntry(gen_times_frame, textvariable=gen_loop_times, width=180).pack(side="left", padx=(10, 0))
+
+#############################################################################################
+
 # Guidance Scale row
 guidance_frame = ctk.CTkFrame(advanced_frame)  # Row container
 guidance_frame.pack(pady=3, anchor="center")  # Center anchored

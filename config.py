@@ -40,7 +40,8 @@ DIG_PICTURE_NUM_INFERENCE_STEPS = 25   # [20 to 100] Number of denoising steps t
                                        #     25–50 is often enough for good results. 
                                        #     60+ only if you need high-res or cleaner details
 
-
+### Other DIG Settings
+DIG_DEFAULT_GEN_LOOP_TIMES = 1
 
     ####################
 ###### SAVE LOCATIONS ######
