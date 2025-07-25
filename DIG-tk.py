@@ -274,8 +274,8 @@ def create_new_preset():
 
 
 # 💾 Save and load thread configurations
-def save_thread():
-    name = thread_name_var.get().strip()
+def update_thread():
+    name = thread_menu.get().strip()
     if not name or name == DEFAULT_THREAD_NAME:
         status_var.set("⚠️ Invalid thread name.")
         return
@@ -291,8 +291,8 @@ def save_thread():
         "save_location": save_location_var.get()
     }
     save_config(name, config)
-    thread_menu.configure(values=list_threads())
-    thread_menu.set(name)
+    #thread_menu.configure(values=list_threads())
+    #thread_menu.set(name)
     status_var.set(f"✅ Preset '{name}' saved.")
 
 def load_thread(event=None):
@@ -502,8 +502,8 @@ btn_new = ctk.CTkButton(preset_button_frame, text="➕ New Preset", command=crea
 btn_new.pack(side="left", padx=5)
 
 # 💾 Update Preset button
-btn_save = ctk.CTkButton(preset_button_frame, text="💾 Update Preset", command=save_thread)
-btn_save.pack(side="left", padx=5)
+btn_update = ctk.CTkButton(preset_button_frame, text="💾 Update Preset", command=update_thread)
+btn_update.pack(side="left", padx=5)
 
 # 🗑️ Delete Preset button
 btn_delete = ctk.CTkButton(preset_button_frame, text="🗑️ Delete Preset", command=delete_thread_ui)
