@@ -47,23 +47,28 @@ DIG_DEFAULT_GEN_LOOP_TIMES = 1
 ###### SAVE LOCATIONS ######
     ####################
 
+DATA_DIR = str(Path.home() / ".friday_ai_data")
+
+### Some models
+MODELS_DIR = f'{DATA_DIR}/models'
+
 ### Image Save locations
 DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
 IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION = 'Pictures/AI'
-DIG_WEBUI_THREAD_DATA_DIR = str(Path.home() / ".friday_ai_data" / "detail_image_gen")
+DIG_WEBUI_THREAD_DATA_DIR = f'{DATA_DIR}/detail_image_gen'
 
 ### CLI Input History
-CLI_HISTORY_FILE = str(Path.home() / ".friday_ai_data" / "cli_history")
+CLI_HISTORY_FILE = f'{DATA_DIR}/cli_history'
 
 ### Global Memory
-MEMORY_FILE = str(Path.home() / ".friday_ai_data" / "memory.json")
+MEMORY_FILE = f'{DATA_DIR}/memory.json'
 
 ### Threads - This is for chatbox display
-THREADS_DIR = str(Path.home() / ".friday_ai_data" / "chatbox_display_threads")
-ACTIVE_FILE = str(Path.home() / ".friday_ai_data" / "active_thread.json")
+THREADS_DIR = f'{DATA_DIR}/chatbox_display_threads'
+ACTIVE_FILE = f'{DATA_DIR}/active_thread.json'
 
 ### Context
-CONTEXT_DIR = str(Path.home() / ".friday_ai_data" / "context")
+CONTEXT_DIR = f'{DATA_DIR}/context'
 MAX_HISTORY = 10
 
 
