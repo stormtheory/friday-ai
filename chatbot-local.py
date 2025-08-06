@@ -1,5 +1,6 @@
 # Written by StormTheory
 # Ported from Gradio frontend to customtkinter
+# https://github.com/stormtheory/friday-ai
 
 import customtkinter as ctk
 from tkinter import filedialog, messagebox, simpledialog

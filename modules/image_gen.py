@@ -15,10 +15,23 @@ username = getpass.getuser()
 
 model_id = "runwayml/stable-diffusion-v1-5"
 
-pipe = StableDiffusionPipeline.from_pretrained(
-    model_id,
-    torch_dtype=torch.float16,
-).to("cuda")
+try:
+    # Attempt offline loading only
+    pipe = StableDiffusionPipeline.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        local_files_only=True,  # ensures no network is used
+    ).to("cuda")
+except OSError as e:
+    # Likely means required files are not present locally
+    print("❌ Required model files not found locally.")
+    print("📦 downloading")
+    pipe = StableDiffusionPipeline.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+    ).to("cuda")
+    raise e
+
 
 def generate_image(prompt: str, output_dir=f"/home/{username}/{IMAGE_GEN_IMAGE_SAVE_HOMESPACE_LOCATION}"):
     # Create images/ directory if it doesn't exist

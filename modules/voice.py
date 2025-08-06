@@ -10,10 +10,11 @@ import numpy as np
 from scipy.io.wavfile import write
 import subprocess
 from datetime import datetime
-from config import ENABLE_SPEECH_OUTPUT
+from config import ENABLE_SPEECH_OUTPUT, DATA_DIR, MODELS_DIR
 from modules.speech_state import SpeechState
 from faster_whisper import WhisperModel
 import tempfile
+from pathlib import Path
 
 # Environment & warnings
 os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -21,11 +22,33 @@ os.environ['ALSA_CARD'] = 'default'
 os.environ['SDL_AUDIODRIVER'] = 'pulseaudio'
 os.environ['XDG_RUNTIME_DIR'] = '/run/user/1000'  # May need to be adjusted per system
 
+os.makedirs(MODELS_DIR, exist_ok=True)
+
 if not sys.stderr.isatty():
     warnings.filterwarnings("ignore")
 
 _audio_proc = None  # Global reference to current audio process
-_whisper_model = WhisperModel("base", compute_type="int8")  # Preload whisper model for speed
+
+
+MODEL_PATH = Path(MODELS_DIR) / "whisper-base"
+#if not MODEL_PATH.is_dir():
+#    from huggingface_hub import snapshot_download
+#    # Only download if missing
+#    snapshot_download(
+#        repo_id="openai/whisper-base",
+#        local_dir=str(MODEL_PATH),
+#        local_dir_use_symlinks=False
+#    )
+
+if MODEL_PATH.is_dir():
+    _whisper_model = WhisperModel(
+        model_size_or_path=str(MODEL_PATH),
+        compute_type="int8"
+    )
+else:
+    _whisper_model = WhisperModel("base", compute_type="int8")  # Preload whisper model for speed
+  
+
 
 def is_speech_enabled():
     return SpeechState.get()
