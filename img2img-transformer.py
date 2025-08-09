@@ -34,7 +34,6 @@ cache_dir = os.path.expanduser(f"{MODELS_DIR}/diffusers/stable-diffusion-xl-base
 # 🧠 Set PyTorch env early for CUDA memory fragmentation control
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import torch
-from diffusers import StableDiffusionXLImg2ImgPipeline
 
 # 🧠 Clean GPU memory before loading
 gc.collect()
