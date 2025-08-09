@@ -10,11 +10,30 @@ import json
 import re
 import gc
 import threading
+from config import (
+    DIG_DEFAULT_PROMPT as DEFAULT_PROMPT,
+    DIG_WEBUI_TITLE,
+    DIG_WEBUI_TOP_PAGE_BANNER,
+    DIG_WEBUI_FILENAME,
+    DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION,
+    DIG_PICTURE_NUM_INFERENCE_STEPS,
+    DIG_PICTURE_HEIGHT,
+    DIG_PICTURE_WIDTH,
+    DIG_PICTURE_NEG_PROMPT,
+    DIG_PICTURE_GUIDANCE_SCALE,
+    DIG_WEBUI_THREAD_DATA_DIR,
+    DIG_DEFAULT_GEN_LOOP_TIMES,
+    MODELS_DIR
+)
 
 # --- Globals ---
 uploaded_image = None
 uploaded_path = None
 last_output_path = None  # 🧠 Track last saved image for deletion
+
+# Define the model repo ID and cache directory
+model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+cache_dir = os.path.expanduser(f"{MODELS_DIR}/diffusers/stable-diffusion-xl-base-1.0")
 
 MAX_TOKEN = 77
 CHARACTER_LIMIT = MAX_TOKEN * 3
@@ -35,23 +54,6 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 if torch.cuda.is_available():
     print(f"🧠 Using GPU: {torch.cuda.get_device_name(0)}")
     print(f"🔋 VRAM available: {torch.cuda.mem_get_info()[0] / 1024**2:.2f} MB")
-
-# 🧠 Model and config import
-from diffusers import StableDiffusionXLPipeline
-from config import (
-    DIG_DEFAULT_PROMPT as DEFAULT_PROMPT,
-    DIG_WEBUI_TITLE,
-    DIG_WEBUI_TOP_PAGE_BANNER,
-    DIG_WEBUI_FILENAME,
-    DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION,
-    DIG_PICTURE_NUM_INFERENCE_STEPS,
-    DIG_PICTURE_HEIGHT,
-    DIG_PICTURE_WIDTH,
-    DIG_PICTURE_NEG_PROMPT,
-    DIG_PICTURE_GUIDANCE_SCALE,
-    DIG_WEBUI_THREAD_DATA_DIR,
-    DIG_DEFAULT_GEN_LOOP_TIMES
-)
 
 def sanitize_filename(name):
     return re.sub(r"[^a-zA-Z0-9_\-]", "_", name)
@@ -86,19 +88,43 @@ def delete_regen():
 DEFAULT_THREAD_NAME = "Default"
 os.makedirs(DIG_WEBUI_THREAD_DATA_DIR, exist_ok=True)
 
-# ✅ Load model directly to GPU for stability
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
-pipe = StableDiffusionXLPipeline.from_pretrained(
-    model_id,
-    torch_dtype=torch.float16,
-    variant="fp16",
-    use_safetensors=True,
-    device_map="balanced"
-)
-pipe.reset_device_map()
-pipe.enable_model_cpu_offload()
-pipe.enable_vae_slicing()
-pipe.enable_attention_slicing()
+# 🧠 Model and config import
+from diffusers import StableDiffusionXLPipeline
+
+if os.path.isdir(cache_dir):
+    # ✅ Load model directly to GPU for stability
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        model_id,
+        cache_dir=cache_dir,
+        local_files_only=True,
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
+        device_map="balanced"
+    )
+    pipe.reset_device_map()
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    pipe.enable_attention_slicing()
+    print("✅ Loaded model offline from cache.")
+else:
+    # 🌐 Model not found locally → download & cache automatically
+    print("📥 Model not found in cache — downloading...")
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        model_id,
+        cache_dir=cache_dir,  # Will be saved here automatically
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
+        device_map="balanced"
+    )
+    # 🛡️ Apply same optimizations after download
+    pipe.reset_device_map()
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    pipe.enable_attention_slicing()
+    print("✅ Model downloaded and cached for future offline use.")
+
 
 DEFAULT_CONFIG = {
     "prompt": DEFAULT_PROMPT,
