@@ -17,7 +17,8 @@ from config import (
     DIG_PICTURE_NUM_INFERENCE_STEPS,
     DIG_PICTURE_WIDTH,
     DIG_PICTURE_GUIDANCE_SCALE,
-    DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION
+    DIG_WEBUI_IMAGE_SAVE_HOMESPACE_LOCATION,
+    MODELS_DIR
 )
 
 # --- Globals ---
@@ -26,6 +27,9 @@ uploaded_path = None
 last_output_path = None  # 🧠 Track last saved image for deletion
 ICON_PATH = "assets/I2I_icon.png"
 
+# Define the model repo ID and cache directory
+model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+cache_dir = os.path.expanduser(f"{MODELS_DIR}/diffusers/stable-diffusion-xl-base-1.0")
 
 # 🧠 Set PyTorch env early for CUDA memory fragmentation control
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -45,18 +49,43 @@ root.title("AI Image-to-Image (I2I) Generator")
 root.geometry("900x800")
 
 # 🧠 Load stable diffusion XL img2img pipeline
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
-pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-    model_id,
-    torch_dtype=torch.float16,
-    variant="fp16",
-    use_safetensors=True,
-    device_map="balanced"
-)
-pipe.reset_device_map()
-pipe.enable_model_cpu_offload()
-pipe.enable_vae_slicing()
-pipe.enable_attention_slicing()
+from diffusers import StableDiffusionXLImg2ImgPipeline
+
+if os.path.isdir(cache_dir):
+    # ✅ Load model directly to GPU for stability
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        model_id,
+        cache_dir=cache_dir,
+        local_files_only=True,
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
+        device_map="balanced"
+    )
+    pipe.reset_device_map()
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    pipe.enable_attention_slicing()
+    print("✅ Loaded model offline from cache.")
+else:
+    # 🌐 Model not found locally → download & cache automatically
+    print("📥 Model not found in cache — downloading...")
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        model_id,
+        cache_dir=cache_dir,  # Will be saved here automatically
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
+        device_map="balanced"
+    )
+    # 🛡️ Apply same optimizations after download
+    pipe.reset_device_map()
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    pipe.enable_attention_slicing()
+    print("✅ Model downloaded and cached for future offline use.")
+
+
 
 if torch.cuda.is_available():
     print(f"🧠 Using GPU: {torch.cuda.get_device_name(0)}")

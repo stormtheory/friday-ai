@@ -22,9 +22,13 @@ from config import (
     DIG_PICTURE_NEG_PROMPT,
     DIG_PICTURE_GUIDANCE_SCALE,
     DIG_WEBUI_THREAD_DATA_DIR,
-    DIG_DEFAULT_GEN_LOOP_TIMES
+    DIG_DEFAULT_GEN_LOOP_TIMES,
+    MODELS_DIR
 )
 
+# Define the model repo ID and cache directory
+model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+cache_dir = os.path.expanduser(f"{MODELS_DIR}/diffusers/stable-diffusion-xl-base-1.0")
 
 # 🔐 Thread storage directory
 DEFAULT_THREAD_NAME = "Default"
@@ -39,19 +43,43 @@ from transformers.utils import logging
 logging.set_verbosity_error()
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
-# Load the model
-model_id = "stabilityai/stable-diffusion-xl-base-1.0"
-pipe = StableDiffusionXLPipeline.from_pretrained(
-    model_id,
-    torch_dtype=torch.float16,
-    variant="fp16",
-    use_safetensors=True,
-    device_map="balanced"
-)
-pipe.reset_device_map()
-pipe.enable_model_cpu_offload()
-pipe.enable_vae_slicing()
-pipe.enable_attention_slicing()
+# 🧠 Model and config import
+from diffusers import StableDiffusionXLPipeline
+
+if os.path.isdir(cache_dir):
+    # ✅ Load model directly to GPU for stability
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        model_id,
+        cache_dir=cache_dir,
+        local_files_only=True,
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
+        device_map="balanced"
+    )
+    pipe.reset_device_map()
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    pipe.enable_attention_slicing()
+    print("✅ Loaded model offline from cache.")
+else:
+    # 🌐 Model not found locally → download & cache automatically
+    print("📥 Model not found in cache — downloading...")
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        model_id,
+        cache_dir=cache_dir,  # Will be saved here automatically
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
+        device_map="balanced"
+    )
+    # 🛡️ Apply same optimizations after download
+    pipe.reset_device_map()
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    pipe.enable_attention_slicing()
+    print("✅ Model downloaded and cached for future offline use.")
+
 
 os.makedirs(DIG_WEBUI_THREAD_DATA_DIR, exist_ok=True)
 
