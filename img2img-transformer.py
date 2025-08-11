@@ -109,7 +109,7 @@ def upload_image():
     pictures_dir = str(Path.home() / "Pictures")
     path = filedialog.askopenfilename(
         initialdir=pictures_dir,
-        filetypes=[("Image files", "*.png *.jpg *.jpeg *.webp")]
+        filetypes=[("Image files", "*.png *.jpg *.JPG *.PNG *.jpeg *.webp")]
     )
     if not path:
         return
